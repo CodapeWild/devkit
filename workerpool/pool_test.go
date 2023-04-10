@@ -31,9 +31,12 @@ func TestRunWorkerPool(t *testing.T) {
 	wp.Start()
 
 	for i := 0; i < 100; i++ {
-		ctx, _ := context.WithTimeout(context.Background(), time.Second)
-		wp.SendJob(ctx, &mockJob{})
+		go func() {
+			ctx, _ := context.WithTimeout(context.Background(), time.Second)
+			wp.SendJob(ctx, &mockJob{})
+		}()
 	}
+	time.Sleep(100 * time.Millisecond)
 
 	wp.Close()
 	time.Sleep(30 * time.Millisecond)
