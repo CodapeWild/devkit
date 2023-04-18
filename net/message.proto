@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package net.message;
+
+option go_package = "/github.com/CodapeWild/devkit/net";
+
+message StringList {
+  repeated string List = 1;
+}
+
+message Message {
+  string URI = 1;
+  string Schema = 2;
+  string Host = 3;
+  int32 Port = 4;
+  string Path = 5;
+  map<string, StringList> Header = 6;
+  string Coding = 7;
+  string Compress = 8;
+  bytes Payload = 9;
+}
