@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package net.message;
 
-option go_package = "/github.com/CodapeWild/devkit/net";
+option go_package = "github.com/CodapeWild/devkit/net/message";
 
 message StringList {
   repeated string List = 1;

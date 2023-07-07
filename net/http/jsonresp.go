@@ -16,3 +16,25 @@
  */
 
 package http
+
+import (
+	"encoding/json"
+	"net/http"
+)
+
+type JSONRespWriter struct {
+	http.ResponseWriter
+}
+
+func (jw *JSONRespWriter) WriteJSON(status int, v interface{}) (int, error) {
+	bts, err := json.Marshal(v)
+	if err != nil {
+		jw.WriteHeader(http.StatusBadRequest)
+
+		return 0, err
+	}
+
+	jw.WriteHeader(status)
+
+	return jw.ResponseWriter.Write(bts)
+}
