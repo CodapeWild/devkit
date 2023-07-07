@@ -21,16 +21,31 @@
  *   SOFTWARE.
  */
 
-package workerpool
+package slice
 
-import "net/http"
-
-func WorkerPoolHTTPWrapper(wp *WorkerPool, next http.Handler) http.Handler {
-	if wp == nil {
-		return next
-	} else {
-		return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-
-		})
+func Contains(src []string, target string) bool {
+	for i := range src {
+		if src[i] == target {
+			return true
+		}
 	}
+
+	return false
+}
+
+func Include(src, target []string) bool {
+	for i := range target {
+		find := false
+		for j := range src {
+			if target[i] == src[j] {
+				find = true
+				break
+			}
+		}
+		if !find {
+			return false
+		}
+	}
+
+	return true
 }

@@ -21,16 +21,25 @@
  *   SOFTWARE.
  */
 
-package workerpool
+package http
 
-import "net/http"
+import (
+	"net/http"
 
-func WorkerPoolHTTPWrapper(wp *WorkerPool, next http.Handler) http.Handler {
-	if wp == nil {
-		return next
-	} else {
-		return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+	"github.com/CodapeWild/devkit/slice"
+)
 
-		})
+func CheckHeaders(next, failed http.HandlerFunc, target map[string][]string) http.HandlerFunc {
+	return func(resp http.ResponseWriter, req *http.Request) {
+		for k, v := range req.Header {
+			if ss, ok := target[k]; ok {
+				if !slice.Include(v, ss) {
+					failed(resp, req)
+
+					return
+				}
+			}
+		}
+		next(resp, req)
 	}
 }
