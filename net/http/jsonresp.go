@@ -34,6 +34,7 @@ func (jw *JSONRespWriter) WriteJSON(status int, v interface{}) (int, error) {
 		return 0, err
 	}
 
+	jw.Header().Set("Content-Type", "application/json")
 	jw.WriteHeader(status)
 
 	return jw.ResponseWriter.Write(bts)
