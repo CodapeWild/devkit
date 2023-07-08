@@ -19,7 +19,6 @@ package bufpool
 
 import (
 	"bytes"
-	"io"
 	"sync"
 )
 
@@ -34,7 +33,7 @@ func PutBuffer(buf *bytes.Buffer) {
 	bp.Put(buf)
 }
 
-func MakeUseOfBuffer(r func(rw io.ReadWriter)) {
+func MakeUseOfBuffer(r func(buf *bytes.Buffer)) {
 	buf := GetBuffer()
 	defer PutBuffer(buf)
 
