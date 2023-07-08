@@ -63,7 +63,7 @@ type JSONRespMessage struct {
 	Payload []byte `json:"payload"`
 }
 
-func (jmsg *JSONRespMessage) Write(resp http.ResponseWriter) (int, error) {
+func (jmsg *JSONRespMessage) WriteBy(resp http.ResponseWriter) (int, error) {
 	return (&JSONResponse{resp}).WriteJSON(jmsg)
 }
 
