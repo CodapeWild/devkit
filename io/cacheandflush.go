@@ -47,7 +47,7 @@ func (cf *CacheAndFlush) Start() {
 				}
 			case data := <-cf.datachan:
 				cf.dataset[cf.cur] = data
-				if cf.cur++; cf.cur == cf.maxSize-1 {
+				if cf.cur++; cf.cur == cf.maxSize {
 					cf.flusher(cf.dataset)
 					cf.dataset = make([]any, cf.maxSize)
 					cf.cur = 0
