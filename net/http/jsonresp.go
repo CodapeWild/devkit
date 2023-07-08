@@ -22,20 +22,56 @@ import (
 	"net/http"
 )
 
-type JSONRespWriter struct {
+type JSONRespWriter interface {
+	http.ResponseWriter
+	WriteJSON(v interface{}) (int, error)
+}
+
+type JSONResponse struct {
 	http.ResponseWriter
 }
 
-func (jw *JSONRespWriter) WriteJSON(status int, v interface{}) (int, error) {
+func (jresp *JSONResponse) Header() http.Header {
+	return jresp.Header()
+}
+
+func (jresp *JSONResponse) Write(bts []byte) (int, error) {
+	return jresp.ResponseWriter.Write(bts)
+}
+
+func (jresp *JSONResponse) WriteHeader(statusCode int) {
+	jresp.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (jresp *JSONResponse) WriteJSON(v interface{}) (int, error) {
 	bts, err := json.Marshal(v)
 	if err != nil {
-		jw.WriteHeader(http.StatusBadRequest)
+		jresp.ResponseWriter.WriteHeader(http.StatusBadRequest)
 
 		return 0, err
 	}
 
-	jw.Header().Set("Content-Type", "application/json")
-	jw.WriteHeader(status)
+	jresp.ResponseWriter.Header().Set("Content-Type", "application/json")
 
-	return jw.ResponseWriter.Write(bts)
+	return jresp.ResponseWriter.Write(bts)
+}
+
+type JSONRespMessage struct {
+	Status  int    `json:"status"`
+	Message string `json:"message"`
+	Code    string `json:"code"`
+	Payload []byte `json:"payload"`
+}
+
+func (jmsg *JSONRespMessage) Write(resp http.ResponseWriter) (int, error) {
+	return (&JSONResponse{resp}).WriteJSON(jmsg)
+}
+
+func NewJSONRespMessage(status int, msg string, code string, payload []byte) *JSONRespMessage {
+	return &JSONRespMessage{
+		Status:  status,
+		Message: msg,
+		Code:    code,
+		Payload: payload,
+	}
 }
