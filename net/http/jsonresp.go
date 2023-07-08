@@ -58,6 +58,7 @@ func (jresp *JSONResponse) WriteJSON(v interface{}) (int, error) {
 
 type JSONRespMessage struct {
 	Status  int    `json:"status"`
+	Version string `json:"version"`
 	Message string `json:"message"`
 	Coding  string `json:"coding"`
 	Payload []byte `json:"payload"`
@@ -71,6 +72,12 @@ type JSONRespMsgOption func(jmsg *JSONRespMessage)
 
 func JSONRespMsgWithMessage(msg string) JSONRespMsgOption {
 	return func(jmsg *JSONRespMessage) { jmsg.Message = msg }
+}
+
+func JSONRespMsgWithVersion(version string) JSONRespMsgOption {
+	return func(jmsg *JSONRespMessage) {
+		jmsg.Version = version
+	}
 }
 
 func JSONRespMsgWithPayload(coding string, payload []byte) JSONRespMsgOption {
