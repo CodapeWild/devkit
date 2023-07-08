@@ -59,7 +59,7 @@ func (jresp *JSONResponse) WriteJSON(v interface{}) (int, error) {
 type JSONRespMessage struct {
 	Status  int    `json:"status"`
 	Message string `json:"message"`
-	Code    string `json:"code"`
+	Coding  string `json:"coding"`
 	Payload []byte `json:"payload"`
 }
 
@@ -71,7 +71,7 @@ func NewJSONRespMessage(status int, msg string, code string, payload []byte) *JS
 	return &JSONRespMessage{
 		Status:  status,
 		Message: msg,
-		Code:    code,
+		Coding:  code,
 		Payload: payload,
 	}
 }
