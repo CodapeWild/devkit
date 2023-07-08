@@ -15,7 +15,7 @@
  *   limitations under the License.
  */
 
-package dataset
+package set
 
 import (
 	"log"

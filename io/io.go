@@ -15,18 +15,28 @@
  *   limitations under the License.
  */
 
-package dataset
+package io
 
-import "sort"
-
-type DataSet interface {
-	Append(value interface{}) bool
-	Replace(old, new interface{}, c int) bool
-	Remove(value interface{}, c int) bool
-	Find(value interface{}) (int, bool)
+type PublishData interface {
+	Publish(data any) error
 }
 
-type OrderedDataSet interface {
-	sort.Interface
-	DataSet
+type PublishDataStream interface {
+	Publish(stream chan any) error
+}
+
+type SubscribeData interface {
+	Subscribe(func(data any)) error
+}
+
+type SubscribeDataStream interface {
+	Subscribe(func(stream chan any)) error
+}
+
+type FechData interface {
+	Fetch() (any, error)
+}
+
+type FetchDataStream interface {
+	Fetch() (chan any, error)
 }
