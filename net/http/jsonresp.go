@@ -56,18 +56,6 @@ func (jresp *JSONResponse) WriteJSON(v interface{}) (int, error) {
 	return jresp.ResponseWriter.Write(bts)
 }
 
-type JSONRespMessage struct {
-	Status  int    `json:"status"`
-	Version string `json:"version"`
-	Message string `json:"message"`
-	Coding  string `json:"coding"`
-	Payload []byte `json:"payload"`
-}
-
-func (jmsg *JSONRespMessage) WriteBy(resp http.ResponseWriter) (int, error) {
-	return (&JSONResponse{resp}).WriteJSON(jmsg)
-}
-
 type JSONRespMsgOption func(jmsg *JSONRespMessage)
 
 func JSONRespMsgWithMessage(msg string) JSONRespMsgOption {
@@ -85,6 +73,26 @@ func JSONRespMsgWithPayload(coding string, payload []byte) JSONRespMsgOption {
 		jmsg.Coding = coding
 		jmsg.Payload = payload
 	}
+}
+
+type JSONRespMessage struct {
+	Status  int    `json:"status"`
+	Version string `json:"version"`
+	Message string `json:"message"`
+	Coding  string `json:"coding"`
+	Payload []byte `json:"payload"`
+}
+
+func (jmsg *JSONRespMessage) With(opts ...JSONRespMsgOption) *JSONRespMessage {
+	for _, opt := range opts {
+		opt(jmsg)
+	}
+
+	return jmsg
+}
+
+func (jmsg *JSONRespMessage) WriteBy(resp http.ResponseWriter) (int, error) {
+	return (&JSONResponse{resp}).WriteJSON(jmsg)
 }
 
 func NewJSONRespMessage(status int, opts ...JSONRespMsgOption) *JSONRespMessage {
