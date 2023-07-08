@@ -67,11 +67,24 @@ func (jmsg *JSONRespMessage) WriteBy(resp http.ResponseWriter) (int, error) {
 	return (&JSONResponse{resp}).WriteJSON(jmsg)
 }
 
-func NewJSONRespMessage(status int, msg string, code string, payload []byte) *JSONRespMessage {
-	return &JSONRespMessage{
-		Status:  status,
-		Message: msg,
-		Coding:  code,
-		Payload: payload,
+type JSONRespMsgOption func(jmsg *JSONRespMessage)
+
+func JSONRespMsgWithMessage(msg string) JSONRespMsgOption {
+	return func(jmsg *JSONRespMessage) { jmsg.Message = msg }
+}
+
+func JSONRespMsgWithPayload(coding string, payload []byte) JSONRespMsgOption {
+	return func(jmsg *JSONRespMessage) {
+		jmsg.Coding = coding
+		jmsg.Payload = payload
 	}
+}
+
+func NewJSONRespMessage(status int, opts ...JSONRespMsgOption) *JSONRespMessage {
+	jmsg := &JSONRespMessage{Status: status}
+	for _, opt := range opts {
+		opt(jmsg)
+	}
+
+	return jmsg
 }
