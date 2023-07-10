@@ -17,26 +17,45 @@
 
 package io
 
-type PublishData interface {
-	Publish(data any) error
+import "context"
+
+type PublishMessage interface {
+	Publish(ctx context.Context, message *IOMessage) (*IOResponse, error)
 }
 
-type PublishDataStream interface {
-	Publish(stream chan any) error
+type PublishMessageBatch interface {
+	PublishBatch(ctx context.Context, batch []*IOMessage) (*IOResponse, error)
 }
 
-type SubscribeData interface {
-	Subscribe(func(data any)) error
+type PublishMessageStream interface {
+	PublishStream(ctx context.Context, stream chan *IOMessage) (*IOResponse, error)
 }
 
-type SubscribeDataStream interface {
-	Subscribe(func(stream chan any)) error
+type SubscribeMessage interface {
+	Subscribe(ctx context.Context, handler func(message *IOMessage) *IOResponse) error
 }
 
-type FechData interface {
-	Fetch() (any, error)
+type SubscribeMessageBatch interface {
+	SubscribeBatch(ctx context.Context, handler func(batch []*IOMessage) *IOResponse) error
 }
 
-type FetchDataStream interface {
-	Fetch() (chan any, error)
+type SubscribeMessageStream interface {
+	SubscribeStream(ctx context.Context, handler func(stream chan *IOMessage) *IOResponse) error
+}
+
+type FetchMessage interface {
+	Fetch(ctx context.Context) (*IOMessage, *IOResponse, error)
+}
+
+type FetchMessageBatch interface {
+	FetchBatch(ctx context.Context) ([]*IOMessage, *IOResponse, error)
+}
+
+type FetchMessageStream interface {
+	FetchStream(ctx context.Context) (chan *IOMessage, *IOResponse, error)
+}
+
+type PublishAndSubscribeBatch interface {
+	PublishMessage
+	SubscribeMessageBatch
 }

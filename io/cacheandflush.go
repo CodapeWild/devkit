@@ -17,14 +17,17 @@
 
 package io
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type CacheAndFlush struct {
 	cur, maxSize int
 	tick         time.Ticker
-	datachan     chan any
-	dataset      []any
-	flusher      func(data any)
+	msgchan      chan *IOMessage
+	batch        []*IOMessage
+	handler      func(batch []*IOMessage) *IOResponse
 	closer       chan struct{}
 }
 
@@ -41,15 +44,15 @@ func (cf *CacheAndFlush) Start() {
 				return
 			case <-cf.tick.C:
 				if cf.cur > 0 {
-					cf.flusher(cf.dataset)
-					cf.dataset = make([]any, cf.maxSize)
+					cf.handler(cf.batch)
+					cf.batch = make([]*IOMessage, cf.maxSize)
 					cf.cur = 0
 				}
-			case data := <-cf.datachan:
-				cf.dataset[cf.cur] = data
+			case msg := <-cf.msgchan:
+				cf.batch[cf.cur] = msg
 				if cf.cur++; cf.cur == cf.maxSize {
-					cf.flusher(cf.dataset)
-					cf.dataset = make([]any, cf.maxSize)
+					cf.handler(cf.batch)
+					cf.batch = make([]*IOMessage, cf.maxSize)
 					cf.cur = 0
 				}
 			}
@@ -57,12 +60,27 @@ func (cf *CacheAndFlush) Start() {
 	}()
 }
 
-func (cf *CacheAndFlush) Publish(data any) {
-	cf.datachan <- data
+func (cf *CacheAndFlush) Publish(ctx context.Context, message *IOMessage) (*IOResponse, error) {
+	if err := ctx.Err(); err != nil {
+		return InputFailed, err
+	}
+	select {
+	case <-ctx.Done():
+		if err := ctx.Err(); err != nil {
+			if _, ok := ctx.Deadline(); ok {
+				return InputTimeout, nil
+			} else {
+				return InputFailed, err
+			}
+		}
+	case cf.msgchan <- message:
+	}
+
+	return InputSuccess, nil
 }
 
-func (cf *CacheAndFlush) Subscribe(flusher func(data any)) error {
-	cf.flusher = flusher
+func (cf *CacheAndFlush) SubscribeBatch(ctx context.Context, handler func(batch []*IOMessage) *IOResponse) error {
+	cf.handler = handler
 
 	return nil
 }
@@ -82,9 +100,9 @@ func NewCacheAndFlush(maxSize int, d time.Duration) *CacheAndFlush {
 	}
 
 	return &CacheAndFlush{
-		maxSize:  maxSize,
-		tick:     *time.NewTicker(d),
-		datachan: make(chan any, cache),
-		dataset:  make([]any, maxSize),
+		maxSize: maxSize,
+		tick:    *time.NewTicker(d),
+		msgchan: make(chan *IOMessage, cache),
+		batch:   make([]*IOMessage, maxSize),
 	}
 }

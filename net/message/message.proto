@@ -8,7 +8,7 @@ message StringList {
   repeated string List = 1;
 }
 
-message Message {
+message NetMessage {
   string URI = 1;
   string Schema = 2;
   string Host = 3;
