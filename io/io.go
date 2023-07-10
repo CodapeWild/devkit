@@ -17,42 +17,46 @@
 
 package io
 
-import "context"
+import (
+	"context"
+
+	"google.golang.org/protobuf/proto"
+)
 
 type PublishMessage interface {
-	Publish(ctx context.Context, message *IOMessage) (*IOResponse, error)
+	Publish(ctx context.Context, message proto.Message) (*IOResponse, error)
 }
 
 type PublishMessageBatch interface {
-	PublishBatch(ctx context.Context, batch []*IOMessage) (*IOResponse, error)
+	PublishBatch(ctx context.Context, batch []proto.Message) (*IOResponse, error)
 }
 
 type PublishMessageStream interface {
-	PublishStream(ctx context.Context, stream chan *IOMessage) (*IOResponse, error)
+	PublishStream(ctx context.Context, stream chan proto.Message) (*IOResponse, error)
 }
 
 type SubscribeMessage interface {
-	Subscribe(ctx context.Context, handler func(message *IOMessage) *IOResponse) error
+	Subscribe(ctx context.Context, handler func(message proto.Message) *IOResponse) error
 }
 
 type SubscribeMessageBatch interface {
-	SubscribeBatch(ctx context.Context, handler func(batch []*IOMessage) *IOResponse) error
+	SubscribeBatch(ctx context.Context, handler func(batch []proto.Message) *IOResponse) error
 }
 
 type SubscribeMessageStream interface {
-	SubscribeStream(ctx context.Context, handler func(stream chan *IOMessage) *IOResponse) error
+	SubscribeStream(ctx context.Context, handler func(stream chan proto.Message) *IOResponse) error
 }
 
 type FetchMessage interface {
-	Fetch(ctx context.Context) (*IOMessage, *IOResponse, error)
+	Fetch(ctx context.Context) (proto.Message, *IOResponse, error)
 }
 
 type FetchMessageBatch interface {
-	FetchBatch(ctx context.Context) ([]*IOMessage, *IOResponse, error)
+	FetchBatch(ctx context.Context) ([]proto.Message, *IOResponse, error)
 }
 
 type FetchMessageStream interface {
-	FetchStream(ctx context.Context) (chan *IOMessage, *IOResponse, error)
+	FetchStream(ctx context.Context) (chan proto.Message, *IOResponse, error)
 }
 
 type PublishAndSubscribeBatch interface {

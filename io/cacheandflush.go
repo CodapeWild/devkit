@@ -20,14 +20,18 @@ package io
 import (
 	"context"
 	"time"
+
+	"google.golang.org/protobuf/proto"
 )
+
+var _ PublishAndSubscribeBatch = (*CacheAndFlush)(nil)
 
 type CacheAndFlush struct {
 	cur, maxSize int
 	tick         time.Ticker
-	msgchan      chan *IOMessage
-	batch        []*IOMessage
-	handler      func(batch []*IOMessage) *IOResponse
+	msgchan      chan proto.Message
+	batch        []proto.Message
+	handler      func(batch []proto.Message) *IOResponse
 	closer       chan struct{}
 }
 
@@ -45,14 +49,14 @@ func (cf *CacheAndFlush) Start() {
 			case <-cf.tick.C:
 				if cf.cur > 0 {
 					cf.handler(cf.batch)
-					cf.batch = make([]*IOMessage, cf.maxSize)
+					cf.batch = make([]proto.Message, cf.maxSize)
 					cf.cur = 0
 				}
 			case msg := <-cf.msgchan:
 				cf.batch[cf.cur] = msg
 				if cf.cur++; cf.cur == cf.maxSize {
 					cf.handler(cf.batch)
-					cf.batch = make([]*IOMessage, cf.maxSize)
+					cf.batch = make([]proto.Message, cf.maxSize)
 					cf.cur = 0
 				}
 			}
@@ -60,7 +64,7 @@ func (cf *CacheAndFlush) Start() {
 	}()
 }
 
-func (cf *CacheAndFlush) Publish(ctx context.Context, message *IOMessage) (*IOResponse, error) {
+func (cf *CacheAndFlush) Publish(ctx context.Context, message proto.Message) (*IOResponse, error) {
 	if err := ctx.Err(); err != nil {
 		return InputFailed, err
 	}
@@ -79,7 +83,7 @@ func (cf *CacheAndFlush) Publish(ctx context.Context, message *IOMessage) (*IORe
 	return InputSuccess, nil
 }
 
-func (cf *CacheAndFlush) SubscribeBatch(ctx context.Context, handler func(batch []*IOMessage) *IOResponse) error {
+func (cf *CacheAndFlush) SubscribeBatch(ctx context.Context, handler func(batch []proto.Message) *IOResponse) error {
 	cf.handler = handler
 
 	return nil
@@ -102,7 +106,7 @@ func NewCacheAndFlush(maxSize int, d time.Duration) *CacheAndFlush {
 	return &CacheAndFlush{
 		maxSize: maxSize,
 		tick:    *time.NewTicker(d),
-		msgchan: make(chan *IOMessage, cache),
-		batch:   make([]*IOMessage, maxSize),
+		msgchan: make(chan proto.Message, cache),
+		batch:   make([]proto.Message, maxSize),
 	}
 }
