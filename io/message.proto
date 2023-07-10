@@ -7,7 +7,7 @@ option go_package = "github.com/CodapeWild/devkit/io";
 message IOMessage {
   string DataType = 1;
   string Coding = 2;
-  string Compressing = 3;
+  string Compress = 3;
   bytes Payload = 4;
 }
 

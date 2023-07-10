@@ -21,3 +21,73 @@ type IOMessageNative struct {
 	IOMessage
 	Payload interface{}
 }
+
+type IOMessageOption func(msg *IOMessage)
+
+func IOMessageWithDataType(dataType string) IOMessageOption {
+	return func(msg *IOMessage) {
+		msg.DataType = dataType
+	}
+}
+
+func IOMessageWithCoding(coding string) IOMessageOption {
+	return func(msg *IOMessage) {
+		msg.Coding = coding
+	}
+}
+
+func IOMessageWithCompress(compress string) IOMessageOption {
+	return func(msg *IOMessage) {
+		msg.Compress = compress
+	}
+}
+
+func IOMessageWithPayload(payload []byte) IOMessageOption {
+	return func(msg *IOMessage) {
+		msg.Payload = payload
+	}
+}
+
+func NewIOMessage(opts ...IOMessageOption) *IOMessage {
+	msg := &IOMessage{}
+	for _, opt := range opts {
+		opt(msg)
+	}
+
+	return msg
+}
+
+type IOMessageNativeOption func(msg *IOMessageNative)
+
+func IOMsgNativeWithDataType(dataType string) IOMessageNativeOption {
+	return func(msg *IOMessageNative) {
+		msg.DataType = dataType
+	}
+}
+
+func IOMsgNativeWithCoding(coding string) IOMessageNativeOption {
+	return func(msg *IOMessageNative) {
+		msg.Coding = coding
+	}
+}
+
+func IOMsgNativeWithCompress(compress string) IOMessageNativeOption {
+	return func(msg *IOMessageNative) {
+		msg.Compress = compress
+	}
+}
+
+func IOMsgNativeWithPayload(payload interface{}) IOMessageNativeOption {
+	return func(msg *IOMessageNative) {
+		msg.Payload = payload
+	}
+}
+
+func NewIOMessageNative(opts ...IOMessageNativeOption) *IOMessageNative {
+	msg := &IOMessageNative{}
+	for _, opt := range opts {
+		opt(msg)
+	}
+
+	return msg
+}
