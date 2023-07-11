@@ -18,6 +18,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MessageImportServiceClient interface {
 	Publish(ctx context.Context, in *IOMessage, opts ...grpc.CallOption) (*IOResponse, error)
+	PublishBatch(ctx context.Context, in *IOMessageBatch, opts ...grpc.CallOption) (*IOResponse, error)
 	PublishStream(ctx context.Context, opts ...grpc.CallOption) (MessageImportService_PublishStreamClient, error)
 }
 
@@ -32,6 +33,15 @@ func NewMessageImportServiceClient(cc grpc.ClientConnInterface) MessageImportSer
 func (c *messageImportServiceClient) Publish(ctx context.Context, in *IOMessage, opts ...grpc.CallOption) (*IOResponse, error) {
 	out := new(IOResponse)
 	err := c.cc.Invoke(ctx, "/io.MessageImportService/Publish", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *messageImportServiceClient) PublishBatch(ctx context.Context, in *IOMessageBatch, opts ...grpc.CallOption) (*IOResponse, error) {
+	out := new(IOResponse)
+	err := c.cc.Invoke(ctx, "/io.MessageImportService/publishBatch", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -77,6 +87,7 @@ func (x *messageImportServicePublishStreamClient) CloseAndRecv() (*IOResponse, e
 // for forward compatibility
 type MessageImportServiceServer interface {
 	Publish(context.Context, *IOMessage) (*IOResponse, error)
+	PublishBatch(context.Context, *IOMessageBatch) (*IOResponse, error)
 	PublishStream(MessageImportService_PublishStreamServer) error
 	mustEmbedUnimplementedMessageImportServiceServer()
 }
@@ -87,6 +98,9 @@ type UnimplementedMessageImportServiceServer struct {
 
 func (UnimplementedMessageImportServiceServer) Publish(context.Context, *IOMessage) (*IOResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Publish not implemented")
+}
+func (UnimplementedMessageImportServiceServer) PublishBatch(context.Context, *IOMessageBatch) (*IOResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PublishBatch not implemented")
 }
 func (UnimplementedMessageImportServiceServer) PublishStream(MessageImportService_PublishStreamServer) error {
 	return status.Errorf(codes.Unimplemented, "method PublishStream not implemented")
@@ -118,6 +132,24 @@ func _MessageImportService_Publish_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MessageImportServiceServer).Publish(ctx, req.(*IOMessage))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MessageImportService_PublishBatch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IOMessageBatch)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MessageImportServiceServer).PublishBatch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.MessageImportService/publishBatch",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MessageImportServiceServer).PublishBatch(ctx, req.(*IOMessageBatch))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -156,6 +188,10 @@ var _MessageImportService_serviceDesc = grpc.ServiceDesc{
 			MethodName: "Publish",
 			Handler:    _MessageImportService_Publish_Handler,
 		},
+		{
+			MethodName: "publishBatch",
+			Handler:    _MessageImportService_PublishBatch_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
@@ -172,6 +208,7 @@ var _MessageImportService_serviceDesc = grpc.ServiceDesc{
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MessageExportServiceClient interface {
 	Subscribe(ctx context.Context, in *IOMessage, opts ...grpc.CallOption) (*IOResponse, error)
+	SubscribeBatch(ctx context.Context, in *IOMessageBatch, opts ...grpc.CallOption) (*IOResponse, error)
 	SubscribeStream(ctx context.Context, opts ...grpc.CallOption) (MessageExportService_SubscribeStreamClient, error)
 }
 
@@ -186,6 +223,15 @@ func NewMessageExportServiceClient(cc grpc.ClientConnInterface) MessageExportSer
 func (c *messageExportServiceClient) Subscribe(ctx context.Context, in *IOMessage, opts ...grpc.CallOption) (*IOResponse, error) {
 	out := new(IOResponse)
 	err := c.cc.Invoke(ctx, "/io.MessageExportService/Subscribe", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *messageExportServiceClient) SubscribeBatch(ctx context.Context, in *IOMessageBatch, opts ...grpc.CallOption) (*IOResponse, error) {
+	out := new(IOResponse)
+	err := c.cc.Invoke(ctx, "/io.MessageExportService/SubscribeBatch", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -231,6 +277,7 @@ func (x *messageExportServiceSubscribeStreamClient) CloseAndRecv() (*IOResponse,
 // for forward compatibility
 type MessageExportServiceServer interface {
 	Subscribe(context.Context, *IOMessage) (*IOResponse, error)
+	SubscribeBatch(context.Context, *IOMessageBatch) (*IOResponse, error)
 	SubscribeStream(MessageExportService_SubscribeStreamServer) error
 	mustEmbedUnimplementedMessageExportServiceServer()
 }
@@ -241,6 +288,9 @@ type UnimplementedMessageExportServiceServer struct {
 
 func (UnimplementedMessageExportServiceServer) Subscribe(context.Context, *IOMessage) (*IOResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
+}
+func (UnimplementedMessageExportServiceServer) SubscribeBatch(context.Context, *IOMessageBatch) (*IOResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SubscribeBatch not implemented")
 }
 func (UnimplementedMessageExportServiceServer) SubscribeStream(MessageExportService_SubscribeStreamServer) error {
 	return status.Errorf(codes.Unimplemented, "method SubscribeStream not implemented")
@@ -272,6 +322,24 @@ func _MessageExportService_Subscribe_Handler(srv interface{}, ctx context.Contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MessageExportServiceServer).Subscribe(ctx, req.(*IOMessage))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MessageExportService_SubscribeBatch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IOMessageBatch)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MessageExportServiceServer).SubscribeBatch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.MessageExportService/SubscribeBatch",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MessageExportServiceServer).SubscribeBatch(ctx, req.(*IOMessageBatch))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -309,6 +377,10 @@ var _MessageExportService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Subscribe",
 			Handler:    _MessageExportService_Subscribe_Handler,
+		},
+		{
+			MethodName: "SubscribeBatch",
+			Handler:    _MessageExportService_SubscribeBatch_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

@@ -11,6 +11,10 @@ message IOMessage {
   bytes Payload = 4;
 }
 
+message IOMessageBatch {
+  repeated IOMessage IOMessageBatch = 1;
+}
+
 enum IOStatus {
   IOSuccess = 0;
   IOK = 1;
@@ -32,10 +36,12 @@ message IOResponse {
 
 service MessageImportService {
   rpc Publish(IOMessage) returns (IOResponse);
+  rpc publishBatch(IOMessageBatch) returns (IOResponse);
   rpc PublishStream(stream IOMessage) returns (IOResponse);
 }
 
 service MessageExportService {
   rpc Subscribe(IOMessage) returns (IOResponse);
+  rpc SubscribeBatch(IOMessageBatch) returns (IOResponse);
   rpc SubscribeStream(stream IOMessage) returns (IOResponse);
 }
