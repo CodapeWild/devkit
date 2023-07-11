@@ -26,11 +26,13 @@ import (
 
 type mockJob struct{}
 
-func (mj *mockJob) Process(ctx context.Context, out chan interface{}) {
+func (mj *mockJob) Process(ctx context.Context, out chan interface{}) error {
 	time.Sleep(30 * time.Millisecond)
 	if out != nil {
 		out <- 123
 	}
+
+	return nil
 }
 
 func (mj *mockJob) Callback(out interface{}, err error) {
@@ -53,8 +55,7 @@ func TestRunWorkerPool(t *testing.T) {
 			wp.SendJob(ctx, &mockJob{})
 		}()
 	}
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(3 * time.Second)
 
 	wp.Close()
-	time.Sleep(30 * time.Millisecond)
 }

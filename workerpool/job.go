@@ -21,15 +21,45 @@ import (
 	"context"
 )
 
+type JobProcess func(ctx context.Context, out chan interface{}) error
+
+type JobCallback func(out interface{}, err error)
+
 type Job interface {
-	Process(ctx context.Context, out chan interface{})
+	Process(ctx context.Context, out chan interface{}) error
 	Callback(out interface{}, err error)
 }
 
-type jobContext func() (ctx context.Context, job Job)
+type JobWrapper struct {
+	proc JobProcess
+	cb   JobCallback
+}
 
-func jobWrapper(ctx context.Context, job Job) jobContext {
-	return func() (context.Context, Job) {
-		return ctx, job
+func (jw *JobWrapper) Process(ctx context.Context, out chan interface{}) error {
+	return jw.proc(ctx, out)
+}
+
+func (jw *JobWrapper) Callback(out interface{}, err error) {
+	jw.cb(out, err)
+}
+
+func NewJobWrapper(job Job) *JobWrapper {
+	return &JobWrapper{
+		proc: job.Process,
+		cb:   job.Callback,
+	}
+}
+
+func NewJobWrapperFromFunc(process JobProcess, callback JobCallback) *JobWrapper {
+	return &JobWrapper{
+		proc: process,
+		cb:   callback,
+	}
+}
+
+func NewJobWrapperWithContext(ctx context.Context, job Job) *JobWrapper {
+	return &JobWrapper{
+		proc: func(_ context.Context, out chan interface{}) error { return job.Process(ctx, out) },
+		cb:   job.Callback,
 	}
 }

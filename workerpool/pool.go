@@ -29,24 +29,16 @@ var (
 	ErrTaskTimeout      = errors.New("task timeout")
 )
 
-func NewWorkerPool(n int) *WorkerPool {
-	return &WorkerPool{
-		n:      n,
-		tasks:  make(chan jobContext),
-		closer: make(chan struct{}),
-	}
-}
-
 type WorkerPool struct {
 	sync.Once
-	n      int
-	tasks  chan jobContext
-	closer chan struct{}
+	maxThreads int
+	jobchan    chan Job
+	closer     chan struct{}
 }
 
 func (wp *WorkerPool) Start() {
 	wp.Do(func() {
-		for i := 0; i < wp.n; i++ {
+		for i := 0; i < wp.maxThreads; i++ {
 			go wp.workLoop()
 		}
 	})
@@ -64,7 +56,7 @@ func (wp *WorkerPool) SendJob(ctx context.Context, job Job) error {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-	case wp.tasks <- jobWrapper(ctx, job):
+	case wp.jobchan <- NewJobWrapperWithContext(ctx, job):
 	}
 
 	return nil
@@ -75,25 +67,19 @@ func (wp *WorkerPool) workLoop() {
 		select {
 		case <-wp.closer:
 			return
-		case jobctx := <-wp.tasks:
-			ctx, job := jobctx()
-			ctxc, canceler := context.WithCancel(ctx)
-			out := make(chan interface{})
-			go job.Process(ctxc, out)
-
-			select {
-			case <-wp.closer:
-				canceler()
-
-				return
-			case <-ctx.Done():
-				if err := ctx.Err(); err != nil {
-					canceler()
-					job.Callback(nil, err)
+		case job := <-wp.jobchan:
+			go func(job Job) {
+				out := make(chan interface{})
+				err := job.Process(nil, out)
+				if jw, ok := job.(*JobWrapper); ok && jw.cb != nil {
+					select {
+					case <-wp.closer:
+						return
+					case o := <-out:
+						job.Callback(o, err)
+					}
 				}
-			case rslt := <-out:
-				job.Callback(rslt, nil)
-			}
+			}(job)
 		}
 	}
 }
@@ -103,5 +89,13 @@ func (wp *WorkerPool) Close() {
 	case <-wp.closer:
 	default:
 		close(wp.closer)
+	}
+}
+
+func NewWorkerPool(n int) *WorkerPool {
+	return &WorkerPool{
+		maxThreads: n,
+		jobchan:    make(chan Job),
+		closer:     make(chan struct{}),
 	}
 }
