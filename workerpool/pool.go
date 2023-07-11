@@ -53,12 +53,8 @@ func (wp *WorkerPool) Start() {
 }
 
 func (wp *WorkerPool) SendJob(ctx context.Context, job Job) error {
-	if ctx == nil {
-		ctx = context.Background()
-	} else {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 
 	select {
