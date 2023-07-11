@@ -29,14 +29,6 @@ var (
 	OutputFailed  = NewIOResponse(IOStatus_OFailed, IORespWithMessage("output failed"))
 )
 
-func (ioresp *IOResponse) With(opts ...IOResponseOption) *IOResponse {
-	for _, opt := range opts {
-		opt(ioresp)
-	}
-
-	return ioresp
-}
-
 type IOResponseOption func(ioresp *IOResponse)
 
 func IORespWithStatus(status IOStatus) IOResponseOption {
@@ -56,6 +48,14 @@ func IORespWithPayload(coding string, payload []byte) IOResponseOption {
 		ioresp.Coding = coding
 		ioresp.Payload = payload
 	}
+}
+
+func (ioresp *IOResponse) With(opts ...IOResponseOption) *IOResponse {
+	for _, opt := range opts {
+		opt(ioresp)
+	}
+
+	return ioresp
 }
 
 func NewIOResponse(status IOStatus, opts ...IOResponseOption) *IOResponse {
