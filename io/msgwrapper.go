@@ -17,11 +17,6 @@
 
 package io
 
-type IOMessageNative struct {
-	IOMessage
-	Payload interface{}
-}
-
 type IOMessageOption func(msg *IOMessage)
 
 func IOMessageWithDataType(dataType string) IOMessageOption {
@@ -46,6 +41,14 @@ func IOMessageWithPayload(payload []byte) IOMessageOption {
 	return func(msg *IOMessage) {
 		msg.Payload = payload
 	}
+}
+
+func (iomsg *IOMessage) With(opts ...IOMessageOption) *IOMessage {
+	for _, opt := range opts {
+		opt(iomsg)
+	}
+
+	return iomsg
 }
 
 func NewIOMessage(opts ...IOMessageOption) *IOMessage {
@@ -81,6 +84,19 @@ func IOMsgNativeWithPayload(payload interface{}) IOMessageNativeOption {
 	return func(msg *IOMessageNative) {
 		msg.Payload = payload
 	}
+}
+
+type IOMessageNative struct {
+	IOMessage
+	Payload interface{}
+}
+
+func (iomsgn *IOMessageNative) With(opts ...IOMessageNativeOption) *IOMessageNative {
+	for _, opt := range opts {
+		opt(iomsgn)
+	}
+
+	return iomsgn
 }
 
 func NewIOMessageNative(opts ...IOMessageNativeOption) *IOMessageNative {
