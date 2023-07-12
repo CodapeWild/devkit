@@ -24,7 +24,8 @@ func WorkerPoolHTTPWrapper(wp *WorkerPool, next http.Handler) http.Handler {
 		return next
 	} else {
 		return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-
+			// todo: integrate with net.http message to complete this job
+			// copy body from request and send it to next handler
 		})
 	}
 }

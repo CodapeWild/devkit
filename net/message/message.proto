@@ -14,8 +14,8 @@ message NetMessage {
   string Host = 3;
   int32 Port = 4;
   string Path = 5;
-  map<string, StringList> Header = 6;
+  map<string, StringList> Headers = 6;
   string Coding = 7;
   string Compress = 8;
-  bytes Payload = 9;
+  bytes Body = 9;
 }
