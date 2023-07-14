@@ -43,12 +43,12 @@ func (seqd *SequentialDirectory) List() ([]fs.DirEntry, error) {
 	return os.ReadDir(seqd.path)
 }
 
-func (seqd *SequentialDirectory) Open(name string) (fs.File, error) {
-	if len(name) != 0 || name[0] != '.' {
+func (seqd *SequentialDirectory) Open(_ string) (fs.File, error) {
+	if seqd.minindex < 0 {
 		return nil, os.ErrNotExist
 	}
 
-	return os.Open(fmt.Sprintf("%s/%s", seqd.path, name))
+	return os.Open(fmt.Sprintf("%s/.%d", seqd.path, seqd.minindex))
 }
 
 func (seqd *SequentialDirectory) OpenWithIndex(index int) (fs.File, error) {
@@ -68,7 +68,7 @@ func (seqd *SequentialDirectory) Save(_ string, r io.Reader) error {
 }
 
 func (seqd *SequentialDirectory) Delete(_ string) error {
-	if seqd.minindex == -1 {
+	if seqd.maxindex < 0 {
 		return os.ErrNotExist
 	}
 
@@ -81,8 +81,8 @@ func (seqd *SequentialDirectory) Delete(_ string) error {
 	seqd.minindex++
 
 	if seqd.minindex > seqd.maxindex {
+		seqd.minindex = 0
 		seqd.maxindex = -1
-		seqd.minindex = -1
 	}
 
 	return nil
@@ -104,7 +104,7 @@ func OpenSequentialDirectory(path string) (*SequentialDirectory, error) {
 		return nil, err
 	}
 	if len(files) == 0 {
-		seqd.minindex = -1
+		seqd.minindex = 0
 		seqd.maxindex = -1
 
 		return seqd, nil
