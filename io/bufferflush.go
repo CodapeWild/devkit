@@ -24,9 +24,9 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-var _ PublishAndSubscribeBatch = (*CacheAndFlush)(nil)
+var _ PublishAndSubscribeBatch = (*BufferFlush)(nil)
 
-type CacheAndFlush struct {
+type BufferFlush struct {
 	cur, maxSize int
 	tick         time.Ticker
 	msgchan      chan proto.Message
@@ -35,7 +35,7 @@ type CacheAndFlush struct {
 	closer       chan struct{}
 }
 
-func (cf *CacheAndFlush) Start() {
+func (cf *BufferFlush) Start() {
 	select {
 	case <-cf.closer:
 		return
@@ -64,7 +64,7 @@ func (cf *CacheAndFlush) Start() {
 	}()
 }
 
-func (cf *CacheAndFlush) Publish(ctx context.Context, message proto.Message) (*IOResponse, error) {
+func (cf *BufferFlush) Publish(ctx context.Context, message proto.Message) (*IOResponse, error) {
 	if err := ctx.Err(); err != nil {
 		return InputFailed, err
 	}
@@ -83,13 +83,13 @@ func (cf *CacheAndFlush) Publish(ctx context.Context, message proto.Message) (*I
 	return InputSuccess, nil
 }
 
-func (cf *CacheAndFlush) SubscribeBatch(ctx context.Context, handler func(batch []proto.Message) *IOResponse) error {
+func (cf *BufferFlush) SubscribeBatch(ctx context.Context, handler func(batch []proto.Message) *IOResponse) error {
 	cf.handler = handler
 
 	return nil
 }
 
-func (cf *CacheAndFlush) Close() {
+func (cf *BufferFlush) Close() {
 	select {
 	case <-cf.closer:
 	default:
@@ -97,13 +97,13 @@ func (cf *CacheAndFlush) Close() {
 	}
 }
 
-func NewCacheAndFlush(maxSize int, d time.Duration) *CacheAndFlush {
+func NewCacheAndFlush(maxSize int, d time.Duration) *BufferFlush {
 	cache := maxSize / 4
 	if cache == 0 {
 		cache = 1
 	}
 
-	return &CacheAndFlush{
+	return &BufferFlush{
 		maxSize: maxSize,
 		tick:    *time.NewTicker(d),
 		msgchan: make(chan proto.Message, cache),

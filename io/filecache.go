@@ -16,3 +16,8 @@
  */
 
 package io
+
+type FileCache struct {
+	pageSize  int // kb
+	direcotry string
+}
