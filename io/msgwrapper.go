@@ -17,29 +17,29 @@
 
 package io
 
-type IOMessageOption func(msg *IOMessage)
+type IOMessageOption func(message *IOMessage)
 
 func IOMessageWithDataType(dataType string) IOMessageOption {
-	return func(msg *IOMessage) {
-		msg.DataType = dataType
+	return func(message *IOMessage) {
+		message.DataType = dataType
 	}
 }
 
 func IOMessageWithCoding(coding string) IOMessageOption {
-	return func(msg *IOMessage) {
-		msg.Coding = coding
+	return func(message *IOMessage) {
+		message.Coding = coding
 	}
 }
 
 func IOMessageWithCompress(compress string) IOMessageOption {
-	return func(msg *IOMessage) {
-		msg.Compress = compress
+	return func(message *IOMessage) {
+		message.Compress = compress
 	}
 }
 
 func IOMessageWithPayload(payload []byte) IOMessageOption {
-	return func(msg *IOMessage) {
-		msg.Payload = payload
+	return func(message *IOMessage) {
+		message.Payload = payload
 	}
 }
 
@@ -60,29 +60,29 @@ func NewIOMessage(opts ...IOMessageOption) *IOMessage {
 	return msg
 }
 
-type IOMessageNativeOption func(msg *IOMessageNative)
+type IOMessageNativeOption func(message *IOMessageNative)
 
 func IOMsgNativeWithDataType(dataType string) IOMessageNativeOption {
-	return func(msg *IOMessageNative) {
-		msg.DataType = dataType
+	return func(message *IOMessageNative) {
+		message.DataType = dataType
 	}
 }
 
 func IOMsgNativeWithCoding(coding string) IOMessageNativeOption {
-	return func(msg *IOMessageNative) {
-		msg.Coding = coding
+	return func(message *IOMessageNative) {
+		message.Coding = coding
 	}
 }
 
 func IOMsgNativeWithCompress(compress string) IOMessageNativeOption {
-	return func(msg *IOMessageNative) {
-		msg.Compress = compress
+	return func(message *IOMessageNative) {
+		message.Compress = compress
 	}
 }
 
 func IOMsgNativeWithPayload(payload interface{}) IOMessageNativeOption {
-	return func(msg *IOMessageNative) {
-		msg.Payload = payload
+	return func(message *IOMessageNative) {
+		message.Payload = payload
 	}
 }
 

@@ -66,6 +66,13 @@ type PubAndSubBatch interface {
 	SubscribeMessageBatch
 }
 
+type PubPubBatchAndSubSubBatch interface {
+	PublishMessage
+	PublishMessageBatch
+	SubscribeMessage
+	SubscribeMessageBatch
+}
+
 type PubBatchAndSubBatch interface {
 	PublishMessageBatch
 	SubscribeMessageBatch

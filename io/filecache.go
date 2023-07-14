@@ -17,7 +17,68 @@
 
 package io
 
+import (
+	"context"
+	"time"
+
+	"google.golang.org/protobuf/proto"
+)
+
+var _ PubPubBatchAndSubSubBatch = (*FileCache)(nil)
+
 type FileCache struct {
-	pageSize  int // kb
-	direcotry string
+	dir           string // pages path
+	pageSize      int    // kb
+	pageBuf       chan proto.Message
+	pior          int // current page index of reading
+	flushTick     time.Ticker
+	handleMessage SubscribeMessageHandler
+	handleBatch   SubscribeMessageBatchHandler
+}
+
+func (fc *FileCache) Publish(ctx context.Context, message proto.Message) (*IOResponse, error) {
+	if err := ctx.Err(); err != nil {
+		return InputFailed, err
+	}
+
+	select {
+	case <-ctx.Done():
+		if err := ctx.Err(); err != nil {
+			if _, ok := ctx.Deadline(); ok {
+				return InputTimeout, nil
+			} else {
+				return InputFailed, err
+			}
+		}
+	case fc.pageBuf <- message:
+	}
+
+	return InputSuccess, nil
+}
+
+func (fc *FileCache) PublishBatch(ctx context.Context, batch []proto.Message) (*IOResponse, error) {
+	if err := ctx.Err(); err != nil {
+		return InputFailed, err
+	}
+
+	for _, msg := range batch {
+		select {
+		case <-ctx.Done():
+		case fc.pageBuf <- msg:
+		}
+	}
+
+	return InputSuccess, nil
+}
+
+func (fc *FileCache) Subscribe(handler SubscribeMessageHandler) error {
+	fc.handleMessage = handler
+
+	return nil
+}
+
+func (fc *FileCache) SubscribeBatch(handler SubscribeMessageBatchHandler) error {
+	fc.handleBatch = handler
+
+	return nil
 }
