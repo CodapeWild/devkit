@@ -35,16 +35,22 @@ type PublishMessageStream interface {
 	PublishStream(ctx context.Context, stream chan proto.Message) (*IOResponse, error)
 }
 
+type SubscribeMessageHandler func(message proto.Message) *IOResponse
+
 type SubscribeMessage interface {
-	Subscribe(ctx context.Context, handler func(message proto.Message) *IOResponse) error
+	Subscribe(handler SubscribeMessageHandler) error
 }
+
+type SubscribeMessageBatchHandler func(batch []proto.Message) *IOResponse
 
 type SubscribeMessageBatch interface {
-	SubscribeBatch(ctx context.Context, handler func(batch []proto.Message) *IOResponse) error
+	SubscribeBatch(handler SubscribeMessageBatchHandler) error
 }
 
+type SubscribeMessageStreamHandler func(stream chan proto.Message, out chan *IOResponse)
+
 type SubscribeMessageStream interface {
-	SubscribeStream(ctx context.Context, handler func(stream chan proto.Message) *IOResponse) error
+	SubscribeStream(handler SubscribeMessageStreamHandler) error
 }
 
 type FetchMessage interface {
@@ -55,11 +61,17 @@ type FetchMessageBatch interface {
 	FetchBatch(ctx context.Context) ([]proto.Message, *IOResponse, error)
 }
 
-type FetchMessageStream interface {
-	FetchStream(ctx context.Context) (chan proto.Message, *IOResponse, error)
-}
-
-type PublishAndSubscribeBatch interface {
+type PubAndSubBatch interface {
 	PublishMessage
 	SubscribeMessageBatch
+}
+
+type PubBatchAndSubBatch interface {
+	PublishMessageBatch
+	SubscribeMessageBatch
+}
+
+type PubStreamAndSubStream interface {
+	PublishMessageStream
+	SubscribeMessageStream
 }

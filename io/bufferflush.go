@@ -24,47 +24,47 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-var _ PublishAndSubscribeBatch = (*BufferFlush)(nil)
+var _ PubAndSubBatch = (*BufferFlush)(nil)
 
 type BufferFlush struct {
 	cur, maxSize int
 	tick         time.Ticker
 	msgchan      chan proto.Message
 	batch        []proto.Message
-	handler      func(batch []proto.Message) *IOResponse
+	handler      SubscribeMessageBatchHandler
 	closer       chan struct{}
 }
 
-func (cf *BufferFlush) Start() {
+func (bf *BufferFlush) Start() {
 	select {
-	case <-cf.closer:
+	case <-bf.closer:
 		return
 	default:
 	}
 	go func() {
 		for {
 			select {
-			case <-cf.closer:
+			case <-bf.closer:
 				return
-			case <-cf.tick.C:
-				if cf.cur > 0 {
-					cf.handler(cf.batch)
-					cf.batch = make([]proto.Message, cf.maxSize)
-					cf.cur = 0
+			case <-bf.tick.C:
+				if bf.cur > 0 {
+					bf.handler(bf.batch)
+					bf.batch = make([]proto.Message, bf.maxSize)
+					bf.cur = 0
 				}
-			case msg := <-cf.msgchan:
-				cf.batch[cf.cur] = msg
-				if cf.cur++; cf.cur == cf.maxSize {
-					cf.handler(cf.batch)
-					cf.batch = make([]proto.Message, cf.maxSize)
-					cf.cur = 0
+			case msg := <-bf.msgchan:
+				bf.batch[bf.cur] = msg
+				if bf.cur++; bf.cur == bf.maxSize {
+					bf.handler(bf.batch)
+					bf.batch = make([]proto.Message, bf.maxSize)
+					bf.cur = 0
 				}
 			}
 		}
 	}()
 }
 
-func (cf *BufferFlush) Publish(ctx context.Context, message proto.Message) (*IOResponse, error) {
+func (bf *BufferFlush) Publish(ctx context.Context, message proto.Message) (*IOResponse, error) {
 	if err := ctx.Err(); err != nil {
 		return InputFailed, err
 	}
@@ -77,23 +77,23 @@ func (cf *BufferFlush) Publish(ctx context.Context, message proto.Message) (*IOR
 				return InputFailed, err
 			}
 		}
-	case cf.msgchan <- message:
+	case bf.msgchan <- message:
 	}
 
 	return InputSuccess, nil
 }
 
-func (cf *BufferFlush) SubscribeBatch(ctx context.Context, handler func(batch []proto.Message) *IOResponse) error {
-	cf.handler = handler
+func (bf *BufferFlush) SubscribeBatch(handler SubscribeMessageBatchHandler) error {
+	bf.handler = handler
 
 	return nil
 }
 
-func (cf *BufferFlush) Close() {
+func (bf *BufferFlush) Close() {
 	select {
-	case <-cf.closer:
+	case <-bf.closer:
 	default:
-		close(cf.closer)
+		close(bf.closer)
 	}
 }
 
