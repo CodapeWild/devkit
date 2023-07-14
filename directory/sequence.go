@@ -35,6 +35,10 @@ type SequentialDirectory struct {
 	minindex, maxindex int    // start from -1 both
 }
 
+func (seqd *SequentialDirectory) Index() (min, max int) {
+	return seqd.minindex, seqd.maxindex
+}
+
 func (seqd *SequentialDirectory) List() ([]fs.DirEntry, error) {
 	return os.ReadDir(seqd.path)
 }
@@ -45,6 +49,10 @@ func (seqd *SequentialDirectory) Open(name string) (fs.File, error) {
 	}
 
 	return os.Open(fmt.Sprintf("%s/%s", seqd.path, name))
+}
+
+func (seqd *SequentialDirectory) OpenWithIndex(index int) (fs.File, error) {
+	return seqd.Open(fmt.Sprintf(".%d", index))
 }
 
 func (seqd *SequentialDirectory) Save(_ string, r io.Reader) error {
