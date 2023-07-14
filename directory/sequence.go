@@ -56,7 +56,7 @@ func (seqd *SequentialDirectory) OpenWithIndex(index int) (fs.File, error) {
 }
 
 func (seqd *SequentialDirectory) Save(_ string, r io.Reader) error {
-	f, err := os.Create(fmt.Sprintf("%s/.%d", seqd.path, seqd.nextID()))
+	f, err := os.Create(fmt.Sprintf("%s/.%d", seqd.path, seqd.incrMaxIndex()))
 	if err != nil {
 		return err
 	}
@@ -88,7 +88,7 @@ func (seqd *SequentialDirectory) Delete(_ string) error {
 	return nil
 }
 
-func (seqd *SequentialDirectory) nextID() int {
+func (seqd *SequentialDirectory) incrMaxIndex() int {
 	seqd.Lock()
 	defer seqd.Unlock()
 
