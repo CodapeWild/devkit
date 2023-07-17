@@ -18,6 +18,7 @@
 package directory
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -98,6 +99,16 @@ func (seqd *SequentialDirectory) incrMaxIndex() int {
 }
 
 func OpenSequentialDirectory(path string) (*SequentialDirectory, error) {
+	if err := Exist(path); err != nil {
+		if !errors.Is(err, ErrNotDir) {
+			if err = os.MkdirAll(path, 0755); err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+	}
+
 	seqd := &SequentialDirectory{path: path}
 	files, err := seqd.List()
 	if err != nil {
