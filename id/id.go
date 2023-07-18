@@ -34,8 +34,8 @@ func (id *ID) Int64() (high, low int64) {
 	return id.high, id.low
 }
 
-func (id *ID) String() string {
-	return fmt.Sprintf("%d-%d", id.high, id.low)
+func (id *ID) String(sep byte) string {
+	return fmt.Sprintf("%d%c%d", id.high, sep, id.low)
 }
 
 func (id *ID) Bytes() [16]byte {
