@@ -17,7 +17,7 @@
 
 package set
 
-var _ DataSet = (*IntDataSet)(nil)
+var _ Set = (*IntDataSet)(nil)
 
 type IntDataSet []int
 

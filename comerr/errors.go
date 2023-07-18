@@ -15,25 +15,10 @@
  *   limitations under the License.
  */
 
-package set
+package comerr
 
-import "sort"
+import "errors"
 
-type Set interface {
-	Append(value any) bool
-	Replace(old, new any, c int) bool
-	Remove(value any, c int) bool
-	Find(value any) (int, bool)
-}
-
-type OrderedSet interface {
-	sort.Interface
-	Set
-}
-
-type QueueSet interface {
-	Push(value any) error
-	Pop() (any, error)
-	AsyncPop(callback func(value any)) error
-	Peek() any
-}
+var (
+	ErrAssertFailed = errors.New("type assertion failed")
+)

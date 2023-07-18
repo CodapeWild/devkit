@@ -22,22 +22,21 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"os"
 	"sort"
-	"strconv"
-	"sync"
+
+	"github.com/CodapeWild/devkit/comerr"
+	"github.com/CodapeWild/devkit/id"
+	"github.com/CodapeWild/devkit/set"
 )
 
 var _ Directory = (*SequentialDirectory)(nil)
 
 type SequentialDirectory struct {
-	sync.Mutex
-	path               string // directory path
-	minindex, maxindex int    // start from -1 both
-}
-
-func (seqd *SequentialDirectory) Index() (min, max int) {
-	return seqd.minindex, seqd.maxindex
+	path  string // directory path
+	idflk *id.IDFlaker
+	stq   *set.SingleThreadQueue
 }
 
 func (seqd *SequentialDirectory) List() ([]fs.DirEntry, error) {
@@ -45,57 +44,48 @@ func (seqd *SequentialDirectory) List() ([]fs.DirEntry, error) {
 }
 
 func (seqd *SequentialDirectory) Open(_ string) (fs.File, error) {
-	if seqd.minindex < 0 {
-		return nil, os.ErrNotExist
+	id, ok := seqd.stq.Peek().(*id.ID)
+	if !ok {
+		return nil, comerr.ErrAssertFailed
 	}
 
-	return os.Open(fmt.Sprintf("%s/.%d", seqd.path, seqd.minindex))
+	return os.Open(seqd.formatPath(id.String('-')))
 }
 
-func (seqd *SequentialDirectory) OpenWithIndex(index int) (fs.File, error) {
-	return seqd.Open(fmt.Sprintf(".%d", index))
+func (seqd *SequentialDirectory) OpenWithIndex(index string) (fs.File, error) {
+	return os.Open(index)
 }
 
 func (seqd *SequentialDirectory) Save(_ string, r io.Reader) error {
-	f, err := os.Create(fmt.Sprintf("%s/.%d", seqd.path, seqd.incrMaxIndex()))
+	id := seqd.idflk.NextID()
+	f, err := os.Create(seqd.formatPath(id.String('-')))
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
 	_, err = io.Copy(f, r)
+	seqd.stq.Push(id)
 
 	return err
 }
 
 func (seqd *SequentialDirectory) Delete(_ string) error {
-	if seqd.maxindex < 0 {
-		return os.ErrNotExist
-	}
+	return seqd.stq.AsyncPop(func(value any) {
+		id, ok := value.(*id.ID)
+		if !ok {
+			log.Println(comerr.ErrAssertFailed.Error())
 
-	seqd.Lock()
-	defer seqd.Unlock()
-
-	if err := os.Remove(fmt.Sprintf("%s/.%d", seqd.path, seqd.minindex)); err != nil {
-		return err
-	}
-	seqd.minindex++
-
-	if seqd.minindex > seqd.maxindex {
-		seqd.minindex = 0
-		seqd.maxindex = -1
-	}
-
-	return nil
+			return
+		}
+		if err := os.Remove(seqd.formatPath(id.String('-'))); err != nil {
+			log.Println(err.Error())
+		}
+	})
 }
 
-func (seqd *SequentialDirectory) incrMaxIndex() int {
-	seqd.Lock()
-	defer seqd.Unlock()
-
-	seqd.maxindex++
-
-	return seqd.maxindex
+func (seqd *SequentialDirectory) formatPath(index string) string {
+	return fmt.Sprintf("%s/.%s", seqd.path, index)
 }
 
 func OpenSequentialDirectory(path string) (*SequentialDirectory, error) {
@@ -110,37 +100,31 @@ func OpenSequentialDirectory(path string) (*SequentialDirectory, error) {
 	}
 
 	seqd := &SequentialDirectory{path: path}
-	files, err := seqd.List()
+	entries, err := seqd.List()
 	if err != nil {
 		return nil, err
 	}
-	if len(files) == 0 {
-		seqd.minindex = 0
-		seqd.maxindex = -1
+	seqd.idflk = id.NewIDFlaker()
+	seqd.stq = set.NewSingleThreadQueue(10)
 
-		return seqd, nil
+	ids := dirEntriesToIDs(entries)
+	sort.Sort(ids)
+	for _, id := range ids {
+		if err = seqd.stq.Push(id); err != nil {
+			log.Println(err.Error())
+		}
 	}
-
-	sort.Sort(seqFiles(files))
-	seqd.minindex, _ = strconv.Atoi(files[0].Name()[1:])
-	seqd.maxindex, _ = strconv.Atoi(files[len(files)-1].Name()[1:])
 
 	return seqd, nil
 }
 
-type seqFiles []fs.DirEntry
+func dirEntriesToIDs(entries []fs.DirEntry) id.IDs {
+	var ids id.IDs
+	for _, entry := range entries {
+		if id, err := id.FromString(entry.Name(), '-'); err == nil {
+			ids = append(ids, id)
+		}
+	}
 
-func (seq seqFiles) Len() int {
-	return len(seq)
-}
-
-func (seq seqFiles) Less(i, j int) bool {
-	x, _ := strconv.Atoi(seq[i].Name()[1:])
-	y, _ := strconv.Atoi(seq[i].Name()[1:])
-
-	return x < y
-}
-
-func (seq seqFiles) Swap(i, j int) {
-	seq[i], seq[j] = seq[j], seq[i]
+	return ids
 }
