@@ -27,19 +27,20 @@ const (
 	que_async_pop queopt = 103
 )
 
-type qoptwrapper struct {
+type stqOptWrapper struct {
 	opt   queopt
 	value any
 	cb    func(any)
 }
 
 type SingleThreadQueue struct {
-	que  []any
-	opts chan *qoptwrapper
+	que    []any
+	opts   chan *stqOptWrapper
+	closer chan struct{}
 }
 
 func (stq *SingleThreadQueue) Push(value any) error {
-	stq.opts <- &qoptwrapper{opt: que_push, value: value}
+	stq.opts <- &stqOptWrapper{opt: que_push, value: value}
 
 	return nil
 }
@@ -49,7 +50,7 @@ func (stq *SingleThreadQueue) Pop() (any, error) {
 }
 
 func (stq *SingleThreadQueue) AsyncPop(callback func(value any)) error {
-	stq.opts <- &qoptwrapper{opt: que_async_pop, cb: callback}
+	stq.opts <- &stqOptWrapper{opt: que_async_pop, cb: callback}
 
 	return nil
 }
@@ -58,25 +59,51 @@ func (stq *SingleThreadQueue) Peek() any {
 	return stq.que[0]
 }
 
+func (stq *SingleThreadQueue) Close() {
+	select {
+	case <-stq.closer:
+	default:
+		close(stq.closer)
+	}
+}
+
 func (stq *SingleThreadQueue) startThread() {
+	select {
+	case <-stq.closer:
+		return
+	default:
+	}
 	go func() {
-		for wrapper := range stq.opts {
-			switch wrapper.opt {
-			case que_push:
-				stq.que = append(stq.que, wrapper.value)
-			case que_async_pop:
-				v := stq.que[0]
-				stq.que = stq.que[1:]
-				go func(value any, cb func(value any)) {
-					cb(value)
-				}(v, wrapper.cb)
+		for {
+			select {
+			case wrapper := <-stq.opts:
+				stq.routine(wrapper)
+			case <-stq.closer:
+				for wrapper := range stq.opts {
+					stq.routine(wrapper)
+				}
+
+				return
 			}
 		}
 	}()
 }
 
+func (stq *SingleThreadQueue) routine(wrapper *stqOptWrapper) {
+	switch wrapper.opt {
+	case que_push:
+		stq.que = append(stq.que, wrapper.value)
+	case que_async_pop:
+		v := stq.que[0]
+		stq.que = stq.que[1:]
+		go func(value any, cb func(value any)) {
+			cb(value)
+		}(v, wrapper.cb)
+	}
+}
+
 func NewSingleThreadQueue(bufSize int) *SingleThreadQueue {
-	stq := &SingleThreadQueue{opts: make(chan *qoptwrapper, bufSize)}
+	stq := &SingleThreadQueue{opts: make(chan *stqOptWrapper, bufSize)}
 	stq.startThread()
 
 	return stq
