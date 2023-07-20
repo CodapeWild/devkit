@@ -29,7 +29,7 @@ var _ PubAndSubBatch = (*BufferFlush)(nil)
 type BufferFlush struct {
 	cur, maxSize int
 	flushTick    time.Ticker
-	msgchan      chan proto.Message
+	msgChan      chan proto.Message
 	batch        []proto.Message
 	handler      SubscribeMessageBatchHandler
 	closer       chan struct{}
@@ -52,7 +52,7 @@ func (bf *BufferFlush) Start() {
 					bf.batch = make([]proto.Message, bf.maxSize)
 					bf.cur = 0
 				}
-			case msg := <-bf.msgchan:
+			case msg := <-bf.msgChan:
 				bf.batch[bf.cur] = msg
 				if bf.cur++; bf.cur == bf.maxSize {
 					bf.handler(bf.batch)
@@ -77,7 +77,7 @@ func (bf *BufferFlush) Publish(ctx context.Context, message proto.Message) (*IOR
 				return InputFailed, err
 			}
 		}
-	case bf.msgchan <- message:
+	case bf.msgChan <- message:
 	}
 
 	return InputSuccess, nil
@@ -106,7 +106,7 @@ func NewCacheAndFlush(maxSize int, d time.Duration) *BufferFlush {
 	return &BufferFlush{
 		maxSize:   maxSize,
 		flushTick: *time.NewTicker(d),
-		msgchan:   make(chan proto.Message, cache),
+		msgChan:   make(chan proto.Message, cache),
 		batch:     make([]proto.Message, maxSize),
 	}
 }
