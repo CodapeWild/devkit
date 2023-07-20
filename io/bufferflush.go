@@ -122,7 +122,7 @@ func (bf *BufferFlush) doFlush() {
 	bf.buffer = make([]SubscribeMessageHandler, bf.maxSize)
 }
 
-func NewBufferAndFlush(maxSize int, d time.Duration) *BufferFlush {
+func NewBufferFlush(maxSize int, d time.Duration) *BufferFlush {
 	cache := maxSize / 2
 	if cache == 0 {
 		cache = 1
