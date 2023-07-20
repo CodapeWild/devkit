@@ -115,7 +115,7 @@ func (nmsgn *NetMessageNative) With(opts ...NetMessageNativeOption) *NetMessageN
 	return nmsgn
 }
 
-func NetNetMessageNative(opts ...NetMessageNativeOption) *NetMessageNative {
+func NewNetMessageNative(opts ...NetMessageNativeOption) *NetMessageNative {
 	msg := &NetMessageNative{}
 	for _, opt := range opts {
 		opt(msg)

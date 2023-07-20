@@ -17,6 +17,12 @@
 
 package io
 
+import "errors"
+
+var (
+	ErrSubscribeHandlerUnset = errors.New("subscribe handler not set")
+)
+
 var (
 	IOSuccess     = NewIOResponse(IOStatus_IOSuccess)
 	InputSuccess  = NewIOResponse(IOStatus_IOK, IORespWithMessage("input success"))
