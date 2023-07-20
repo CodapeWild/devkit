@@ -34,14 +34,8 @@ message IOResponse {
   bytes Payload = 4;
 }
 
-service MessageImportService {
-  rpc Publish(IOMessage) returns (IOResponse);
-  rpc publishBatch(IOMessageBatch) returns (IOResponse);
-  rpc PublishStream(stream IOMessage) returns (IOResponse);
-}
-
-service MessageExportService {
-  rpc Subscribe(IOMessage) returns (IOResponse);
-  rpc SubscribeBatch(IOMessageBatch) returns (IOResponse);
-  rpc SubscribeStream(stream IOMessage) returns (IOResponse);
+service MessageReportService {
+  rpc Send(IOMessage) returns (IOResponse);
+  rpc SendBatch(IOMessageBatch) returns (IOResponse);
+  rpc SendStream(stream IOMessage) returns (IOResponse);
 }

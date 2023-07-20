@@ -13,65 +13,65 @@ import (
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion7
 
-// MessageImportServiceClient is the client API for MessageImportService service.
+// MessageReportServiceClient is the client API for MessageReportService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type MessageImportServiceClient interface {
-	Publish(ctx context.Context, in *IOMessage, opts ...grpc.CallOption) (*IOResponse, error)
-	PublishBatch(ctx context.Context, in *IOMessageBatch, opts ...grpc.CallOption) (*IOResponse, error)
-	PublishStream(ctx context.Context, opts ...grpc.CallOption) (MessageImportService_PublishStreamClient, error)
+type MessageReportServiceClient interface {
+	Send(ctx context.Context, in *IOMessage, opts ...grpc.CallOption) (*IOResponse, error)
+	SendBatch(ctx context.Context, in *IOMessageBatch, opts ...grpc.CallOption) (*IOResponse, error)
+	SendStream(ctx context.Context, opts ...grpc.CallOption) (MessageReportService_SendStreamClient, error)
 }
 
-type messageImportServiceClient struct {
+type messageReportServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewMessageImportServiceClient(cc grpc.ClientConnInterface) MessageImportServiceClient {
-	return &messageImportServiceClient{cc}
+func NewMessageReportServiceClient(cc grpc.ClientConnInterface) MessageReportServiceClient {
+	return &messageReportServiceClient{cc}
 }
 
-func (c *messageImportServiceClient) Publish(ctx context.Context, in *IOMessage, opts ...grpc.CallOption) (*IOResponse, error) {
+func (c *messageReportServiceClient) Send(ctx context.Context, in *IOMessage, opts ...grpc.CallOption) (*IOResponse, error) {
 	out := new(IOResponse)
-	err := c.cc.Invoke(ctx, "/io.MessageImportService/Publish", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/io.MessageReportService/Send", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *messageImportServiceClient) PublishBatch(ctx context.Context, in *IOMessageBatch, opts ...grpc.CallOption) (*IOResponse, error) {
+func (c *messageReportServiceClient) SendBatch(ctx context.Context, in *IOMessageBatch, opts ...grpc.CallOption) (*IOResponse, error) {
 	out := new(IOResponse)
-	err := c.cc.Invoke(ctx, "/io.MessageImportService/publishBatch", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/io.MessageReportService/SendBatch", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *messageImportServiceClient) PublishStream(ctx context.Context, opts ...grpc.CallOption) (MessageImportService_PublishStreamClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_MessageImportService_serviceDesc.Streams[0], "/io.MessageImportService/PublishStream", opts...)
+func (c *messageReportServiceClient) SendStream(ctx context.Context, opts ...grpc.CallOption) (MessageReportService_SendStreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_MessageReportService_serviceDesc.Streams[0], "/io.MessageReportService/SendStream", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &messageImportServicePublishStreamClient{stream}
+	x := &messageReportServiceSendStreamClient{stream}
 	return x, nil
 }
 
-type MessageImportService_PublishStreamClient interface {
+type MessageReportService_SendStreamClient interface {
 	Send(*IOMessage) error
 	CloseAndRecv() (*IOResponse, error)
 	grpc.ClientStream
 }
 
-type messageImportServicePublishStreamClient struct {
+type messageReportServiceSendStreamClient struct {
 	grpc.ClientStream
 }
 
-func (x *messageImportServicePublishStreamClient) Send(m *IOMessage) error {
+func (x *messageReportServiceSendStreamClient) Send(m *IOMessage) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *messageImportServicePublishStreamClient) CloseAndRecv() (*IOResponse, error) {
+func (x *messageReportServiceSendStreamClient) CloseAndRecv() (*IOResponse, error) {
 	if err := x.ClientStream.CloseSend(); err != nil {
 		return nil, err
 	}
@@ -82,97 +82,97 @@ func (x *messageImportServicePublishStreamClient) CloseAndRecv() (*IOResponse, e
 	return m, nil
 }
 
-// MessageImportServiceServer is the server API for MessageImportService service.
-// All implementations must embed UnimplementedMessageImportServiceServer
+// MessageReportServiceServer is the server API for MessageReportService service.
+// All implementations must embed UnimplementedMessageReportServiceServer
 // for forward compatibility
-type MessageImportServiceServer interface {
-	Publish(context.Context, *IOMessage) (*IOResponse, error)
-	PublishBatch(context.Context, *IOMessageBatch) (*IOResponse, error)
-	PublishStream(MessageImportService_PublishStreamServer) error
-	mustEmbedUnimplementedMessageImportServiceServer()
+type MessageReportServiceServer interface {
+	Send(context.Context, *IOMessage) (*IOResponse, error)
+	SendBatch(context.Context, *IOMessageBatch) (*IOResponse, error)
+	SendStream(MessageReportService_SendStreamServer) error
+	mustEmbedUnimplementedMessageReportServiceServer()
 }
 
-// UnimplementedMessageImportServiceServer must be embedded to have forward compatible implementations.
-type UnimplementedMessageImportServiceServer struct {
+// UnimplementedMessageReportServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedMessageReportServiceServer struct {
 }
 
-func (UnimplementedMessageImportServiceServer) Publish(context.Context, *IOMessage) (*IOResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Publish not implemented")
+func (UnimplementedMessageReportServiceServer) Send(context.Context, *IOMessage) (*IOResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Send not implemented")
 }
-func (UnimplementedMessageImportServiceServer) PublishBatch(context.Context, *IOMessageBatch) (*IOResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method PublishBatch not implemented")
+func (UnimplementedMessageReportServiceServer) SendBatch(context.Context, *IOMessageBatch) (*IOResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SendBatch not implemented")
 }
-func (UnimplementedMessageImportServiceServer) PublishStream(MessageImportService_PublishStreamServer) error {
-	return status.Errorf(codes.Unimplemented, "method PublishStream not implemented")
+func (UnimplementedMessageReportServiceServer) SendStream(MessageReportService_SendStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method SendStream not implemented")
 }
-func (UnimplementedMessageImportServiceServer) mustEmbedUnimplementedMessageImportServiceServer() {}
+func (UnimplementedMessageReportServiceServer) mustEmbedUnimplementedMessageReportServiceServer() {}
 
-// UnsafeMessageImportServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to MessageImportServiceServer will
+// UnsafeMessageReportServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to MessageReportServiceServer will
 // result in compilation errors.
-type UnsafeMessageImportServiceServer interface {
-	mustEmbedUnimplementedMessageImportServiceServer()
+type UnsafeMessageReportServiceServer interface {
+	mustEmbedUnimplementedMessageReportServiceServer()
 }
 
-func RegisterMessageImportServiceServer(s grpc.ServiceRegistrar, srv MessageImportServiceServer) {
-	s.RegisterService(&_MessageImportService_serviceDesc, srv)
+func RegisterMessageReportServiceServer(s grpc.ServiceRegistrar, srv MessageReportServiceServer) {
+	s.RegisterService(&_MessageReportService_serviceDesc, srv)
 }
 
-func _MessageImportService_Publish_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _MessageReportService_Send_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(IOMessage)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MessageImportServiceServer).Publish(ctx, in)
+		return srv.(MessageReportServiceServer).Send(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/io.MessageImportService/Publish",
+		FullMethod: "/io.MessageReportService/Send",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MessageImportServiceServer).Publish(ctx, req.(*IOMessage))
+		return srv.(MessageReportServiceServer).Send(ctx, req.(*IOMessage))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _MessageImportService_PublishBatch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _MessageReportService_SendBatch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(IOMessageBatch)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MessageImportServiceServer).PublishBatch(ctx, in)
+		return srv.(MessageReportServiceServer).SendBatch(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/io.MessageImportService/publishBatch",
+		FullMethod: "/io.MessageReportService/SendBatch",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MessageImportServiceServer).PublishBatch(ctx, req.(*IOMessageBatch))
+		return srv.(MessageReportServiceServer).SendBatch(ctx, req.(*IOMessageBatch))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _MessageImportService_PublishStream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(MessageImportServiceServer).PublishStream(&messageImportServicePublishStreamServer{stream})
+func _MessageReportService_SendStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(MessageReportServiceServer).SendStream(&messageReportServiceSendStreamServer{stream})
 }
 
-type MessageImportService_PublishStreamServer interface {
+type MessageReportService_SendStreamServer interface {
 	SendAndClose(*IOResponse) error
 	Recv() (*IOMessage, error)
 	grpc.ServerStream
 }
 
-type messageImportServicePublishStreamServer struct {
+type messageReportServiceSendStreamServer struct {
 	grpc.ServerStream
 }
 
-func (x *messageImportServicePublishStreamServer) SendAndClose(m *IOResponse) error {
+func (x *messageReportServiceSendStreamServer) SendAndClose(m *IOResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *messageImportServicePublishStreamServer) Recv() (*IOMessage, error) {
+func (x *messageReportServiceSendStreamServer) Recv() (*IOMessage, error) {
 	m := new(IOMessage)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -180,213 +180,23 @@ func (x *messageImportServicePublishStreamServer) Recv() (*IOMessage, error) {
 	return m, nil
 }
 
-var _MessageImportService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "io.MessageImportService",
-	HandlerType: (*MessageImportServiceServer)(nil),
+var _MessageReportService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "io.MessageReportService",
+	HandlerType: (*MessageReportServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Publish",
-			Handler:    _MessageImportService_Publish_Handler,
+			MethodName: "Send",
+			Handler:    _MessageReportService_Send_Handler,
 		},
 		{
-			MethodName: "publishBatch",
-			Handler:    _MessageImportService_PublishBatch_Handler,
+			MethodName: "SendBatch",
+			Handler:    _MessageReportService_SendBatch_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "PublishStream",
-			Handler:       _MessageImportService_PublishStream_Handler,
-			ClientStreams: true,
-		},
-	},
-	Metadata: "io/message.proto",
-}
-
-// MessageExportServiceClient is the client API for MessageExportService service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type MessageExportServiceClient interface {
-	Subscribe(ctx context.Context, in *IOMessage, opts ...grpc.CallOption) (*IOResponse, error)
-	SubscribeBatch(ctx context.Context, in *IOMessageBatch, opts ...grpc.CallOption) (*IOResponse, error)
-	SubscribeStream(ctx context.Context, opts ...grpc.CallOption) (MessageExportService_SubscribeStreamClient, error)
-}
-
-type messageExportServiceClient struct {
-	cc grpc.ClientConnInterface
-}
-
-func NewMessageExportServiceClient(cc grpc.ClientConnInterface) MessageExportServiceClient {
-	return &messageExportServiceClient{cc}
-}
-
-func (c *messageExportServiceClient) Subscribe(ctx context.Context, in *IOMessage, opts ...grpc.CallOption) (*IOResponse, error) {
-	out := new(IOResponse)
-	err := c.cc.Invoke(ctx, "/io.MessageExportService/Subscribe", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *messageExportServiceClient) SubscribeBatch(ctx context.Context, in *IOMessageBatch, opts ...grpc.CallOption) (*IOResponse, error) {
-	out := new(IOResponse)
-	err := c.cc.Invoke(ctx, "/io.MessageExportService/SubscribeBatch", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *messageExportServiceClient) SubscribeStream(ctx context.Context, opts ...grpc.CallOption) (MessageExportService_SubscribeStreamClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_MessageExportService_serviceDesc.Streams[0], "/io.MessageExportService/SubscribeStream", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &messageExportServiceSubscribeStreamClient{stream}
-	return x, nil
-}
-
-type MessageExportService_SubscribeStreamClient interface {
-	Send(*IOMessage) error
-	CloseAndRecv() (*IOResponse, error)
-	grpc.ClientStream
-}
-
-type messageExportServiceSubscribeStreamClient struct {
-	grpc.ClientStream
-}
-
-func (x *messageExportServiceSubscribeStreamClient) Send(m *IOMessage) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *messageExportServiceSubscribeStreamClient) CloseAndRecv() (*IOResponse, error) {
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	m := new(IOResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-// MessageExportServiceServer is the server API for MessageExportService service.
-// All implementations must embed UnimplementedMessageExportServiceServer
-// for forward compatibility
-type MessageExportServiceServer interface {
-	Subscribe(context.Context, *IOMessage) (*IOResponse, error)
-	SubscribeBatch(context.Context, *IOMessageBatch) (*IOResponse, error)
-	SubscribeStream(MessageExportService_SubscribeStreamServer) error
-	mustEmbedUnimplementedMessageExportServiceServer()
-}
-
-// UnimplementedMessageExportServiceServer must be embedded to have forward compatible implementations.
-type UnimplementedMessageExportServiceServer struct {
-}
-
-func (UnimplementedMessageExportServiceServer) Subscribe(context.Context, *IOMessage) (*IOResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
-}
-func (UnimplementedMessageExportServiceServer) SubscribeBatch(context.Context, *IOMessageBatch) (*IOResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SubscribeBatch not implemented")
-}
-func (UnimplementedMessageExportServiceServer) SubscribeStream(MessageExportService_SubscribeStreamServer) error {
-	return status.Errorf(codes.Unimplemented, "method SubscribeStream not implemented")
-}
-func (UnimplementedMessageExportServiceServer) mustEmbedUnimplementedMessageExportServiceServer() {}
-
-// UnsafeMessageExportServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to MessageExportServiceServer will
-// result in compilation errors.
-type UnsafeMessageExportServiceServer interface {
-	mustEmbedUnimplementedMessageExportServiceServer()
-}
-
-func RegisterMessageExportServiceServer(s grpc.ServiceRegistrar, srv MessageExportServiceServer) {
-	s.RegisterService(&_MessageExportService_serviceDesc, srv)
-}
-
-func _MessageExportService_Subscribe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(IOMessage)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MessageExportServiceServer).Subscribe(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/io.MessageExportService/Subscribe",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MessageExportServiceServer).Subscribe(ctx, req.(*IOMessage))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _MessageExportService_SubscribeBatch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(IOMessageBatch)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MessageExportServiceServer).SubscribeBatch(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/io.MessageExportService/SubscribeBatch",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MessageExportServiceServer).SubscribeBatch(ctx, req.(*IOMessageBatch))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _MessageExportService_SubscribeStream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(MessageExportServiceServer).SubscribeStream(&messageExportServiceSubscribeStreamServer{stream})
-}
-
-type MessageExportService_SubscribeStreamServer interface {
-	SendAndClose(*IOResponse) error
-	Recv() (*IOMessage, error)
-	grpc.ServerStream
-}
-
-type messageExportServiceSubscribeStreamServer struct {
-	grpc.ServerStream
-}
-
-func (x *messageExportServiceSubscribeStreamServer) SendAndClose(m *IOResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *messageExportServiceSubscribeStreamServer) Recv() (*IOMessage, error) {
-	m := new(IOMessage)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-var _MessageExportService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "io.MessageExportService",
-	HandlerType: (*MessageExportServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Subscribe",
-			Handler:    _MessageExportService_Subscribe_Handler,
-		},
-		{
-			MethodName: "SubscribeBatch",
-			Handler:    _MessageExportService_SubscribeBatch_Handler,
-		},
-	},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "SubscribeStream",
-			Handler:       _MessageExportService_SubscribeStream_Handler,
+			StreamName:    "SendStream",
+			Handler:       _MessageReportService_SendStream_Handler,
 			ClientStreams: true,
 		},
 	},
