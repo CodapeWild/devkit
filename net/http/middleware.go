@@ -20,14 +20,14 @@ package http
 import (
 	"net/http"
 
-	"github.com/CodapeWild/devkit/slice"
+	"github.com/CodapeWild/devkit/iterator"
 )
 
 func CheckHeaders(next, failed http.HandlerFunc, target map[string][]string) http.HandlerFunc {
 	return func(resp http.ResponseWriter, req *http.Request) {
 		for k, v := range req.Header {
 			if ss, ok := target[k]; ok {
-				if !slice.Include(v, ss) {
+				if !iterator.Include(v, ss) {
 					failed(resp, req)
 
 					return
