@@ -26,8 +26,6 @@ import (
 
 var _ PubPubBatchAndSubSubBatch = (*FileCache)(nil)
 
-// uncompleted
-// todo: integrate with SequentialDirectory
 type FileCache struct {
 	dir           string // pages path
 	pageSize      int    // kb

@@ -23,15 +23,15 @@ import (
 	"github.com/CodapeWild/devkit/comerr"
 )
 
-type Remapper map[string]string
+type RemapKeys map[string]string
 
-func (rp Remapper) Remap(source interface{}) error {
-	refmap := reflect.ValueOf(source)
+func (rmpk RemapKeys) Remap(kv any) error {
+	refmap := reflect.ValueOf(kv)
 	if refmap.Kind() != reflect.Map {
 		return comerr.ErrAssertFailed
 	}
 
-	for old, new := range rp {
+	for old, new := range rmpk {
 		refoldk := reflect.ValueOf(old)
 		refoldv := refmap.MapIndex(refoldk)
 		if refoldv.IsValid() {

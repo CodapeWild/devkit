@@ -15,25 +15,27 @@
  *   limitations under the License.
  */
 
-package http
+package reflect
 
 import (
-	"net/http"
+	"reflect"
 
-	"github.com/CodapeWild/devkit/operator"
+	"github.com/CodapeWild/devkit/comerr"
 )
 
-func CheckHeaders(next, failed http.HandlerFunc, target map[string][]string) http.HandlerFunc {
-	return func(resp http.ResponseWriter, req *http.Request) {
-		for k, v := range req.Header {
-			if ss, ok := target[k]; ok {
-				if !operator.Include(v, ss) {
-					failed(resp, req)
-
-					return
-				}
-			}
-		}
-		next(resp, req)
+func Swap(slice any, i, j int) error {
+	if i < 0 || j < 0 {
+		return comerr.ErrInvalidParameters
 	}
+	refslc := reflect.ValueOf(slice)
+	if k := refslc.Kind(); k != reflect.Slice || k != reflect.Array {
+		return comerr.ErrAssertFailed
+	}
+	if l := refslc.Len(); l < i || l < j {
+		return comerr.ErrOverflow
+	}
+
+	reflect.Swapper(slice)(i, j)
+
+	return nil
 }

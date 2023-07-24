@@ -20,5 +20,7 @@ package comerr
 import "errors"
 
 var (
-	ErrAssertFailed = errors.New("type assertion failed")
+	ErrAssertFailed      = errors.New("type assertion failed")
+	ErrInvalidParameters = errors.New("invalid parameters")
+	ErrOverflow          = errors.New("index overflow")
 )

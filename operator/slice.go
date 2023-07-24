@@ -15,7 +15,7 @@
  *   limitations under the License.
  */
 
-package iterator
+package operator
 
 func Contains(src []string, target string) bool {
 	for i := range src {
