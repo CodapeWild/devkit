@@ -18,8 +18,14 @@
 package directory
 
 import (
+	"errors"
 	"io"
 	"io/fs"
+)
+
+var (
+	ErrNotDir   = errors.New("file exists but not a directory")
+	ErrDirEmpty = errors.New("directory is empty")
 )
 
 type Directory interface {

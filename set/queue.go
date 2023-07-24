@@ -56,7 +56,11 @@ func (stq *SingleThreadQueue) AsyncPop(callback func(value any)) error {
 }
 
 func (stq *SingleThreadQueue) Peek() any {
-	return stq.que[0]
+	if len(stq.que) != 0 {
+		return stq.que[0]
+	} else {
+		return nil
+	}
 }
 
 func (stq *SingleThreadQueue) Close() {
@@ -73,6 +77,7 @@ func (stq *SingleThreadQueue) startThread() {
 		return
 	default:
 	}
+
 	go func() {
 		for {
 			select {

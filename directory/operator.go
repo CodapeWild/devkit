@@ -18,12 +18,7 @@
 package directory
 
 import (
-	"errors"
 	"os"
-)
-
-var (
-	ErrNotDir = errors.New("file exists but not a directory")
 )
 
 func Exist(dir string) error {

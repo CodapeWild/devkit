@@ -19,6 +19,7 @@ package comerr
 
 import "errors"
 
+// Application level of runtime common errors
 var (
 	ErrAssertFailed      = errors.New("type assertion failed")
 	ErrInvalidParameters = errors.New("invalid parameters")

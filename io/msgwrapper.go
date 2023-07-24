@@ -107,3 +107,6 @@ func NewIOMessageNative(opts ...IOMessageNativeOption) *IOMessageNative {
 
 	return msg
 }
+
+// todo: add new type message context and support message propagate cross processes
+type IOMessageContext map[string]interface{}

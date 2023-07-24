@@ -125,7 +125,7 @@ func (bf *BufferFlush) doFlush() {
 func NewBufferFlush(maxSize int, d time.Duration) *BufferFlush {
 	cache := maxSize / 2
 	if cache == 0 {
-		cache = 1
+		cache = 10
 	}
 
 	return &BufferFlush{
@@ -133,5 +133,6 @@ func NewBufferFlush(maxSize int, d time.Duration) *BufferFlush {
 		flushTick: *time.NewTicker(d),
 		msgChan:   make(chan SubscribeMessageHandler, cache),
 		buffer:    make([]SubscribeMessageHandler, maxSize),
+		closer:    make(chan struct{}),
 	}
 }

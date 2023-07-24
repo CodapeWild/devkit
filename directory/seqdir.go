@@ -36,7 +36,7 @@ var _ Directory = (*SequentialDirectory)(nil)
 type SequentialDirectory struct {
 	path  string // directory path
 	idflk *id.IDFlaker
-	stq   *set.SingleThreadQueue
+	stque *set.SingleThreadQueue
 }
 
 func (seqd *SequentialDirectory) List() ([]fs.DirEntry, error) {
@@ -44,7 +44,11 @@ func (seqd *SequentialDirectory) List() ([]fs.DirEntry, error) {
 }
 
 func (seqd *SequentialDirectory) Open(_ string) (fs.File, error) {
-	id, ok := seqd.stq.Peek().(*id.ID)
+	t := seqd.stque.Peek()
+	if t == nil {
+		return nil, ErrDirEmpty
+	}
+	id, ok := t.(*id.ID)
 	if !ok {
 		return nil, comerr.ErrAssertFailed
 	}
@@ -65,13 +69,13 @@ func (seqd *SequentialDirectory) Save(_ string, r io.Reader) error {
 	defer f.Close()
 
 	_, err = io.Copy(f, r)
-	seqd.stq.Push(id)
+	seqd.stque.Push(id)
 
 	return err
 }
 
 func (seqd *SequentialDirectory) Delete(_ string) error {
-	return seqd.stq.AsyncPop(func(value any) {
+	return seqd.stque.AsyncPop(func(value any) {
 		id, ok := value.(*id.ID)
 		if !ok {
 			log.Println(comerr.ErrAssertFailed.Error())
@@ -105,12 +109,12 @@ func OpenSequentialDirectory(path string) (*SequentialDirectory, error) {
 		return nil, err
 	}
 	seqd.idflk = id.NewIDFlaker()
-	seqd.stq = set.NewSingleThreadQueue(10)
+	seqd.stque = set.NewSingleThreadQueue(10)
 
 	ids := dirEntriesToIDs(entries)
 	sort.Sort(ids)
 	for _, id := range ids {
-		if err = seqd.stq.Push(id); err != nil {
+		if err = seqd.stque.Push(id); err != nil {
 			log.Println(err.Error())
 		}
 	}

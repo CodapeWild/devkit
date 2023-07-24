@@ -19,21 +19,22 @@ package io
 
 import (
 	"context"
-	"time"
 
+	"github.com/CodapeWild/devkit/directory"
 	"google.golang.org/protobuf/proto"
 )
 
 var _ PubPubBatchAndSubSubBatch = (*FileCache)(nil)
 
 type FileCache struct {
-	dir           string // pages path
-	pageSize      int    // kb
-	pageBuf       chan proto.Message
-	pior          int // current page index of reading
-	flushTick     time.Ticker
+	seqDir        *directory.SequentialDirectory // cache data in directory
+	pageSize      int                            // kb
+	msgChan       chan proto.Message
+	buffer        []proto.Message
+	cur           int
 	handleMessage SubscribeMessageHandler
 	handleBatch   SubscribeMessageBatchHandler
+	closer        chan struct{}
 }
 
 func (fc *FileCache) Publish(ctx context.Context, message proto.Message) (*IOResponse, error) {
@@ -50,7 +51,7 @@ func (fc *FileCache) Publish(ctx context.Context, message proto.Message) (*IORes
 				return InputFailed, err
 			}
 		}
-	case fc.pageBuf <- message:
+	case fc.msgChan <- message:
 	}
 
 	return InputSuccess, nil
@@ -64,7 +65,7 @@ func (fc *FileCache) PublishBatch(ctx context.Context, batch []proto.Message) (*
 	for _, msg := range batch {
 		select {
 		case <-ctx.Done():
-		case fc.pageBuf <- msg:
+		case fc.msgChan <- msg:
 		}
 	}
 
@@ -81,4 +82,35 @@ func (fc *FileCache) SubscribeBatch(handler SubscribeMessageBatchHandler) error 
 	fc.handleBatch = handler
 
 	return nil
+}
+
+func (fc *FileCache) Start() {
+
+}
+
+func (fc *FileCache) Close() {
+	select {
+	case <-fc.closer:
+	default:
+		close(fc.closer)
+	}
+}
+
+func NewFileCache(dir string, pageSize int) (*FileCache, error) {
+	seqDir, err := directory.OpenSequentialDirectory(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	cache := pageSize / 2
+	if cache == 0 {
+		cache = 10
+	}
+	return &FileCache{
+		seqDir:   seqDir,
+		pageSize: pageSize,
+		msgChan:  make(chan proto.Message, cache),
+		buffer:   make([]proto.Message, pageSize),
+		closer:   make(chan struct{}),
+	}, nil
 }
