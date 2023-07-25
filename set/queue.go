@@ -17,6 +17,8 @@
 
 package set
 
+import "github.com/CodapeWild/devkit/comerr"
+
 var _ QueueSet = (*SingleThreadQueue)(nil)
 
 type queopt byte
@@ -34,9 +36,10 @@ type stqOptWrapper struct {
 }
 
 type SingleThreadQueue struct {
-	que    []any
-	opts   chan *stqOptWrapper
-	closer chan struct{}
+	que           []any
+	opts          chan *stqOptWrapper
+	pause, resume chan struct{}
+	closer        chan struct{}
 }
 
 func (stq *SingleThreadQueue) Push(value any) error {
@@ -46,10 +49,23 @@ func (stq *SingleThreadQueue) Push(value any) error {
 }
 
 func (stq *SingleThreadQueue) Pop() (any, error) {
-	return nil, nil
+	if len(stq.que) == 0 {
+		return nil, comerr.ErrEmptyValue
+	}
+
+	stq.pause <- struct{}{}
+	v := stq.que[0]
+	stq.que = stq.que[1:]
+	stq.resume <- struct{}{}
+
+	return v, nil
 }
 
 func (stq *SingleThreadQueue) AsyncPop(callback func(value any)) error {
+	if len(stq.que) == 0 {
+		return comerr.ErrEmptyValue
+	}
+
 	stq.opts <- &stqOptWrapper{opt: que_async_pop, cb: callback}
 
 	return nil
@@ -81,6 +97,8 @@ func (stq *SingleThreadQueue) startThread() {
 	go func() {
 		for {
 			select {
+			case <-stq.pause:
+				<-stq.resume
 			case wrapper := <-stq.opts:
 				stq.routine(wrapper)
 			case <-stq.closer:

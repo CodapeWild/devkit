@@ -22,6 +22,7 @@ import "errors"
 // Application level of runtime common errors
 var (
 	ErrAssertFailed      = errors.New("type assertion failed")
+	ErrEmptyValue        = errors.New("reference to an empty value")
 	ErrInvalidParameters = errors.New("invalid parameters")
 	ErrOverflow          = errors.New("index overflow")
 )
