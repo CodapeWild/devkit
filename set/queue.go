@@ -17,7 +17,9 @@
 
 package set
 
-import "github.com/CodapeWild/devkit/comerr"
+import (
+	"github.com/CodapeWild/devkit/comerr"
+)
 
 var _ QueueSet = (*SingleThreadQueue)(nil)
 
@@ -97,16 +99,16 @@ func (stq *SingleThreadQueue) startThread() {
 	go func() {
 		for {
 			select {
-			case <-stq.pause:
-				<-stq.resume
-			case wrapper := <-stq.opts:
-				stq.routine(wrapper)
 			case <-stq.closer:
 				for wrapper := range stq.opts {
 					stq.routine(wrapper)
 				}
 
 				return
+			case <-stq.pause:
+				<-stq.resume
+			case wrapper := <-stq.opts:
+				stq.routine(wrapper)
 			}
 		}
 	}()
@@ -126,7 +128,12 @@ func (stq *SingleThreadQueue) routine(wrapper *stqOptWrapper) {
 }
 
 func NewSingleThreadQueue(bufSize int) *SingleThreadQueue {
-	stq := &SingleThreadQueue{opts: make(chan *stqOptWrapper, bufSize)}
+	stq := &SingleThreadQueue{
+		opts:   make(chan *stqOptWrapper, bufSize),
+		pause:  make(chan struct{}),
+		resume: make(chan struct{}),
+		closer: make(chan struct{}),
+	}
 	stq.startThread()
 
 	return stq
