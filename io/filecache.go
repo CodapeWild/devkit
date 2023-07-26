@@ -27,7 +27,7 @@ import (
 var _ PubPubBatchAndSubSubBatch = (*FileCache)(nil)
 
 type FileCache struct {
-	seqDir        *directory.SequentialDirectory // cache data in directory
+	seqDir        *directory.SequentialDirectory // cache data in sequential read/write directory
 	pageSize      int                            // kb
 	msgChan       chan proto.Message
 	buffer        []proto.Message
@@ -96,7 +96,7 @@ func (fc *FileCache) Close() {
 	}
 }
 
-func NewFileCache(dir string, pageSize int) (*FileCache, error) {
+func OpenFileCache(dir string, pageSize int) (*FileCache, error) {
 	seqDir, err := directory.OpenSequentialDirectory(dir)
 	if err != nil {
 		return nil, err

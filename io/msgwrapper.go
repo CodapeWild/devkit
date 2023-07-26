@@ -17,6 +17,15 @@
 
 package io
 
+import (
+	"bytes"
+	"errors"
+	"io"
+
+	"github.com/CodapeWild/devkit/bufpool"
+	"google.golang.org/protobuf/proto"
+)
+
 type IOMessageOption func(message *IOMessage)
 
 func IOMessageWithDataType(dataType string) IOMessageOption {
@@ -108,5 +117,69 @@ func NewIOMessageNative(opts ...IOMessageNativeOption) *IOMessageNative {
 	return msg
 }
 
-// todo: add new type message context and support message propagate cross processes
-type IOMessageContext map[string]interface{}
+func (x *IOMessageBatch) SetMessages(batch []*IOMessage) {
+	x.IOMessageBatch = batch
+}
+
+func (x *IOMessageBatch) AppendMessages(batch []*IOMessage) {
+	l := len(x.IOMessageBatch) + len(batch)
+	buf := make([]*IOMessage, l)
+	i := copy(buf, x.IOMessageBatch)
+	copy(buf[i:], batch)
+	x.IOMessageBatch = buf
+}
+
+const delim byte = '\r'
+
+type IOMessageList []*IOMessage
+
+func (x IOMessageList) Encode(list IOMessageList) (bts []byte, err error) {
+	bufpool.MakeUseOfBuffer(func(buf *bytes.Buffer) {
+		for i := range x {
+			var p []byte
+			if p, err = proto.Marshal(x[i]); err != nil {
+				return
+			}
+			buf.Write(p)
+			buf.WriteByte(delim)
+		}
+		for i := range list {
+			var p []byte
+			if p, err = proto.Marshal(list[i]); err != nil {
+				return
+			}
+			buf.Write(p)
+			buf.WriteByte(delim)
+		}
+		bts = buf.Bytes()
+	})
+
+	return
+}
+
+func (x IOMessageList) Decode(bts []byte) (list IOMessageList, err error) {
+	bufpool.MakeUseOfBuffer(func(buf *bytes.Buffer) {
+		if _, err = buf.Write(bts); err != nil {
+			return
+		}
+
+		for {
+			var line []byte
+			if line, err = buf.ReadBytes(delim); err != nil {
+				if errors.Is(err, io.EOF) {
+					err = nil
+				}
+
+				return
+			}
+
+			msg := &IOMessage{}
+			if err = proto.Unmarshal(line[:len(line)-1], msg); err != nil {
+				return
+			}
+			list = append(list, msg)
+		}
+	})
+
+	return
+}
