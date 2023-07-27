@@ -34,31 +34,22 @@ func (flk *IDFlaker) NextID() *ID {
 	flk.Lock()
 	defer flk.Unlock()
 
-	flk.seq++
-	flk.seq &= max
-	if flk.seq == 0 {
-		now := time.Now().UnixMilli()
-		for flk.ts == now {
-			now = time.Now().UnixMilli()
+	now := time.Now().UnixMilli()
+	if flk.ts != now {
+		flk.seq = 0
+	} else {
+		flk.seq++
+		flk.seq &= max
+		if flk.seq == 0 {
+			for {
+				now = time.Now().UnixMilli()
+				if flk.ts != now {
+					break
+				}
+			}
 		}
-		flk.ts = now
 	}
-	// if now == flk.ts {
-	// 	if flk.seq < math.MaxInt64 {
-	// 		flk.seq++
-	// 	} else {
-	// 		for {
-	// 			if now = time.Now().UnixMilli(); now != flk.ts {
-	// 				flk.ts = now
-	// 				flk.seq = 0
-	// 				break
-	// 			}
-	// 		}
-	// 	}
-	// } else {
-	// 	flk.ts = now
-	// 	flk.seq = 0
-	// }
+	flk.ts = now
 
 	return &ID{high: flk.ts, low: flk.seq}
 }

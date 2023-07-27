@@ -17,15 +17,17 @@
 
 package id
 
-import "testing"
+import (
+	"testing"
+)
 
-func TestMultiThreadsGenNextID(t *testing.T) {
+func TestGenNextID(t *testing.T) {
 	gen := NewIDFlaker()
-	n := 1000
-	saved := make(map[[16]byte]bool)
+	n := 100000
+	saved := make(map[string]bool)
 	for i := 0; i < n; i++ {
 		t.Run("TestMultiThreadsGenNextID", func(t *testing.T) {
-			id := gen.NextID().Bytes()
+			id := gen.NextID().String('-')
 			if saved[id] {
 				t.Fatal("duplicated id")
 			}
@@ -34,9 +36,11 @@ func TestMultiThreadsGenNextID(t *testing.T) {
 	}
 }
 
+var id *ID
+
 func BenchmarkGenNextID(b *testing.B) {
 	gen := NewIDFlaker()
 	for i := 0; i < b.N; i++ {
-		gen.NextID()
+		id = gen.NextID()
 	}
 }
