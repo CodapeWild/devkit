@@ -23,36 +23,46 @@ import (
 	"time"
 )
 
+var max = int64(math.MaxInt64)
+
 type IDFlaker struct {
 	sync.Mutex
-	timing, seq int64
+	ts, seq int64
 }
 
 func (flk *IDFlaker) NextID() *ID {
 	flk.Lock()
 	defer flk.Unlock()
 
-	now := time.Now().UnixMilli()
-	if now == flk.timing {
-		if flk.seq < math.MaxInt64 {
-			flk.seq++
-		} else {
-			for {
-				if now = time.Now().UnixMilli(); now != flk.timing {
-					flk.timing = now
-					flk.seq = 0
-					break
-				}
-			}
+	flk.seq++
+	flk.seq &= max
+	if flk.seq == 0 {
+		now := time.Now().UnixMilli()
+		for flk.ts == now {
+			now = time.Now().UnixMilli()
 		}
-	} else {
-		flk.timing = now
-		flk.seq = 0
+		flk.ts = now
 	}
+	// if now == flk.ts {
+	// 	if flk.seq < math.MaxInt64 {
+	// 		flk.seq++
+	// 	} else {
+	// 		for {
+	// 			if now = time.Now().UnixMilli(); now != flk.ts {
+	// 				flk.ts = now
+	// 				flk.seq = 0
+	// 				break
+	// 			}
+	// 		}
+	// 	}
+	// } else {
+	// 	flk.ts = now
+	// 	flk.seq = 0
+	// }
 
-	return &ID{high: flk.timing, low: flk.seq}
+	return &ID{high: flk.ts, low: flk.seq}
 }
 
 func NewIDFlaker() *IDFlaker {
-	return &IDFlaker{timing: time.Now().UnixMilli()}
+	return &IDFlaker{ts: time.Now().UnixMilli()}
 }
