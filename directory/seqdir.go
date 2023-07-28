@@ -25,6 +25,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/CodapeWild/devkit/comerr"
 	"github.com/CodapeWild/devkit/id"
@@ -39,24 +40,24 @@ type SequentialDirectory struct {
 	stque *set.SingleThreadQueue
 }
 
-func (seqd *SequentialDirectory) List() ([]fs.DirEntry, error) {
-	return os.ReadDir(seqd.path)
+func (seqdir *SequentialDirectory) List() ([]fs.DirEntry, error) {
+	return os.ReadDir(seqdir.path)
 }
 
-func (seqd *SequentialDirectory) Open(_ string) (fs.File, error) {
-	t := seqd.stque.Peek()
-	if t == nil {
+func (seqdir *SequentialDirectory) Open(_ string) (fs.File, error) {
+	value := seqdir.stque.Peek()
+	if value == nil {
 		return nil, ErrDirEmpty
 	}
-	id, ok := t.(*id.ID)
+	id, ok := value.(*id.ID)
 	if !ok {
 		return nil, comerr.ErrAssertFailed
 	}
 
-	return os.Open(seqd.formatPath(id.String('-')))
+	return os.Open(seqdir.formatPath(id.String('-')))
 }
 
-func (seqd *SequentialDirectory) OpenWithIndex(index string) (fs.File, error) {
+func (seqdir *SequentialDirectory) OpenWithID(index string) (fs.File, error) {
 	return os.Open(index)
 }
 
@@ -74,22 +75,18 @@ func (seqd *SequentialDirectory) Save(_ string, r io.Reader) error {
 	return err
 }
 
-func (seqd *SequentialDirectory) Delete(_ string) error {
-	return seqd.stque.AsyncPop(func(value any) {
-		id, ok := value.(*id.ID)
-		if !ok {
-			log.Println(comerr.ErrAssertFailed.Error())
+func (seqdir *SequentialDirectory) Delete(_ string) error {
+	value, _ := seqdir.stque.Pop()
+	id, ok := value.(*id.ID)
+	if !ok {
+		return comerr.ErrAssertFailed
+	}
 
-			return
-		}
-		if err := os.Remove(seqd.formatPath(id.String('-'))); err != nil {
-			log.Println(err.Error())
-		}
-	})
+	return os.Remove(seqdir.formatPath(id.String('-')))
 }
 
-func (seqd *SequentialDirectory) formatPath(index string) string {
-	return fmt.Sprintf("%s/.%s", seqd.path, index)
+func (seqdir *SequentialDirectory) formatPath(id string) string {
+	return fmt.Sprintf("%s/.%s", seqdir.path, id)
 }
 
 func OpenSequentialDirectory(path string) (*SequentialDirectory, error) {
@@ -103,32 +100,37 @@ func OpenSequentialDirectory(path string) (*SequentialDirectory, error) {
 		}
 	}
 
-	seqd := &SequentialDirectory{path: path}
-	entries, err := seqd.List()
+	seqdir := &SequentialDirectory{path: path}
+	entries, err := seqdir.List()
 	if err != nil {
 		return nil, err
 	}
-	seqd.idflk = id.NewIDFlaker()
-	seqd.stque = set.NewSingleThreadQueue(10)
+	seqdir.idflk = id.NewIDFlaker()
+	seqdir.stque = set.NewSingleThreadQueue(10)
 
-	ids := dirEntriesToIDs(entries)
+	ids, err := dirEntriesToIDs(entries)
+	if err != nil {
+		return nil, err
+	}
 	sort.Sort(ids)
 	for _, id := range ids {
-		if err = seqd.stque.Push(id); err != nil {
+		if err = seqdir.stque.Push(id); err != nil {
 			log.Println(err.Error())
 		}
 	}
 
-	return seqd, nil
+	return seqdir, nil
 }
 
-func dirEntriesToIDs(entries []fs.DirEntry) id.IDs {
+func dirEntriesToIDs(entries []fs.DirEntry) (id.IDs, error) {
 	var ids id.IDs
 	for _, entry := range entries {
-		if id, err := id.FromString(entry.Name(), '-'); err == nil {
+		if id, err := id.FromString(strings.TrimPrefix(entry.Name(), "."), '-'); err != nil {
+			return nil, err
+		} else {
 			ids = append(ids, id)
 		}
 	}
 
-	return ids
+	return ids, nil
 }

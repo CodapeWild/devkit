@@ -55,5 +55,5 @@ func (flk *IDFlaker) NextID() *ID {
 }
 
 func NewIDFlaker() *IDFlaker {
-	return &IDFlaker{ts: time.Now().UnixMilli()}
+	return &IDFlaker{ts: time.Now().UnixMilli(), seq: 0}
 }

@@ -17,31 +17,33 @@
 
 package set
 
-import (
-	"github.com/CodapeWild/devkit/comerr"
-)
-
 var _ Queue = (*SingleThreadQueue)(nil)
 
 type queopt byte
 
 const (
-	que_push      queopt = 101
-	que_pop       queopt = 102
-	que_async_pop queopt = 103
+	que_peek queopt = 101
+	que_push queopt = 102
+	que_pop  queopt = 103
 )
 
 type stqOptWrapper struct {
 	opt   queopt
 	value any
-	cb    func(any)
+	out   chan any
 }
 
 type SingleThreadQueue struct {
-	que           []any
-	opts          chan *stqOptWrapper
-	pause, resume chan struct{}
-	closer        chan struct{}
+	que    []any
+	opts   chan *stqOptWrapper
+	closer chan struct{}
+}
+
+func (stq *SingleThreadQueue) Peek() any {
+	out := make(chan any)
+	stq.opts <- &stqOptWrapper{opt: que_peek, out: out}
+
+	return <-out
 }
 
 func (stq *SingleThreadQueue) Push(value any) error {
@@ -51,34 +53,10 @@ func (stq *SingleThreadQueue) Push(value any) error {
 }
 
 func (stq *SingleThreadQueue) Pop() (any, error) {
-	if len(stq.que) == 0 {
-		return nil, comerr.ErrEmptyValue
-	}
+	out := make(chan any)
+	stq.opts <- &stqOptWrapper{opt: que_pop, out: out}
 
-	stq.pause <- struct{}{}
-	v := stq.que[0]
-	stq.que = stq.que[1:]
-	stq.resume <- struct{}{}
-
-	return v, nil
-}
-
-func (stq *SingleThreadQueue) AsyncPop(callback func(value any)) error {
-	if len(stq.que) == 0 {
-		return comerr.ErrEmptyValue
-	}
-
-	stq.opts <- &stqOptWrapper{opt: que_async_pop, cb: callback}
-
-	return nil
-}
-
-func (stq *SingleThreadQueue) Peek() any {
-	if len(stq.que) != 0 {
-		return stq.que[0]
-	} else {
-		return nil
-	}
+	return <-out, nil
 }
 
 func (stq *SingleThreadQueue) Close() {
@@ -105,8 +83,6 @@ func (stq *SingleThreadQueue) startThread() {
 				}
 
 				return
-			case <-stq.pause:
-				<-stq.resume
 			case wrapper := <-stq.opts:
 				stq.routine(wrapper)
 			}
@@ -116,22 +92,27 @@ func (stq *SingleThreadQueue) startThread() {
 
 func (stq *SingleThreadQueue) routine(wrapper *stqOptWrapper) {
 	switch wrapper.opt {
+	case que_peek:
+		if len(stq.que) != 0 {
+			wrapper.out <- stq.que[0]
+		} else {
+			wrapper.out <- nil
+		}
 	case que_push:
 		stq.que = append(stq.que, wrapper.value)
-	case que_async_pop:
-		v := stq.que[0]
-		stq.que = stq.que[1:]
-		go func(value any, cb func(value any)) {
-			cb(value)
-		}(v, wrapper.cb)
+	case que_pop:
+		if len(stq.que) != 0 {
+			wrapper.out <- stq.que[0]
+			stq.que = stq.que[1:]
+		} else {
+			wrapper.out <- nil
+		}
 	}
 }
 
 func NewSingleThreadQueue(bufSize int) *SingleThreadQueue {
 	stq := &SingleThreadQueue{
 		opts:   make(chan *stqOptWrapper, bufSize),
-		pause:  make(chan struct{}),
-		resume: make(chan struct{}),
 		closer: make(chan struct{}),
 	}
 	stq.startThread()

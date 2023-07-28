@@ -26,37 +26,55 @@ import (
 	"testing"
 )
 
-func TestSeqDirReadAndWrite(t *testing.T) {
-	seqdir, err := OpenSequentialDirectory("./test")
+func TestSeqDirSave(t *testing.T) {
+	seqDir, err := OpenSequentialDirectory("./test")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	for i := 0; i < 10; i++ {
-		t.Run("TestSeqDirReadAndWrite-Write:"+strconv.Itoa(i), func(t *testing.T) {
-			buf := make([]byte, 1000)
+	var (
+		bufSize   = 1000
+		saveTimes = 10
+	)
+	for i := 0; i < saveTimes; i++ {
+		t.Run("save:"+strconv.Itoa(i), func(t *testing.T) {
+			buf := make([]byte, bufSize)
 			_, err := rand.Read(buf)
 			if err != nil {
 				t.Fatal(err.Error())
 			}
-			if err := seqdir.Save("", bytes.NewBuffer(buf)); err != nil {
+			if err := seqDir.Save("", bytes.NewBuffer(buf)); err != nil {
 				t.Fatal(err.Error())
 			}
 		})
 	}
-	for i := 0; i < 5; i++ {
-		t.Run("TestSeqDirReadAndWrite-Read:"+strconv.Itoa(i), func(t *testing.T) {
-			f, err := seqdir.Open("")
+}
+
+func TestSeqDirDelete(t *testing.T) {
+	seqDir, err := OpenSequentialDirectory("./test")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	var (
+		bufSize     = 1000
+		deleteTimes = 5
+	)
+	for i := 0; i < deleteTimes; i++ {
+		t.Run("remove:"+strconv.Itoa(i), func(t *testing.T) {
+			f, err := seqDir.Open("")
 			if err != nil {
 				t.Fatal(err.Error())
 			}
-			buf := make([]byte, 1000)
+			defer f.Close()
+
+			buf := make([]byte, bufSize)
 			if _, err = f.Read(buf); err != nil {
 				t.Fatal(err.Error())
 			}
-			f.Close()
 			fmt.Println(base64.RawStdEncoding.EncodeToString(buf))
-			if err := seqdir.Delete(""); err != nil {
+
+			if err := seqDir.Delete(""); err != nil {
 				t.Fatal(err.Error())
 			}
 		})

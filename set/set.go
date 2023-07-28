@@ -17,8 +17,6 @@
 
 package set
 
-import "sort"
-
 type Set interface {
 	Append(value any) bool
 	Replace(old, new any, c int) bool
@@ -26,14 +24,8 @@ type Set interface {
 	Find(value any) (int, bool)
 }
 
-type OrderedSet interface {
-	sort.Interface
-	Set
-}
-
 type Queue interface {
 	Peek() any
 	Push(value any) error
 	Pop() (any, error)
-	AsyncPop(callback func(value any)) error
 }

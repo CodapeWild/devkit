@@ -70,11 +70,11 @@ func FromString(id string, sep byte) (*ID, error) {
 		return nil, ErrInvalidFormat
 	}
 
-	low, err := strconv.ParseInt(id[:c], 10, 64)
+	high, err := strconv.ParseInt(id[:c], 10, 64)
 	if err != nil {
 		return nil, err
 	}
-	high, err := strconv.ParseInt(id[c+1:], 10, 64)
+	low, err := strconv.ParseInt(id[c+1:], 10, 64)
 	if err != nil {
 		return nil, err
 	}
@@ -83,8 +83,8 @@ func FromString(id string, sep byte) (*ID, error) {
 }
 
 func FromBytes(bts [16]byte) *ID {
-	lowb := bts[:8]
 	highb := bts[8:]
+	lowb := bts[:8]
 
 	return &ID{
 		high: int64(highb[0]) | int64(highb[1])<<8 | int64(highb[2])<<16 | int64(highb[3])<<24 | int64(highb[4])<<32 | int64(highb[5])<<40 | int64(highb[6])<<48 | int64(highb[7])<<56,
@@ -99,7 +99,7 @@ func (ids IDs) Len() int {
 }
 
 func (ids IDs) Less(i, j int) bool {
-	return ids[i].high < ids[j].high && ids[i].low < ids[j].low
+	return (ids[i].high < ids[j].high) && (ids[i].low < ids[j].low)
 }
 
 func (ids IDs) Swap(i, j int) {

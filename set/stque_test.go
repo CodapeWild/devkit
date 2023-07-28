@@ -44,26 +44,3 @@ func TestSTQuePushAndPop(t *testing.T) {
 		t.Fatal("single thread queue not work as expected")
 	}
 }
-
-func TestSTQuePushAndAsyncPop(t *testing.T) {
-	stq := NewSingleThreadQueue(10)
-	for i := 0; i < 100; i++ {
-		t.Run("stq:push", func(t *testing.T) {
-			buf := make([]byte, 1000)
-			rand.Read(buf)
-			if err := stq.Push(buf); err != nil {
-				t.Fatal(err.Error())
-			}
-		})
-	}
-	for i := 0; i < 100; i++ {
-		t.Run("stq:async_pop", func(t *testing.T) {
-			if err := stq.AsyncPop(func(value any) {}); err != nil {
-				t.Fatal(err.Error())
-			}
-		})
-	}
-	if stq.Peek() != nil {
-		t.Fatal("single thread queue not work as expected")
-	}
-}
