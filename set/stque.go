@@ -21,7 +21,7 @@ import (
 	"github.com/CodapeWild/devkit/comerr"
 )
 
-var _ QueueSet = (*SingleThreadQueue)(nil)
+var _ Queue = (*SingleThreadQueue)(nil)
 
 type queopt byte
 

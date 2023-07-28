@@ -22,7 +22,7 @@ import (
 	"testing"
 )
 
-func TestPushAndPop(t *testing.T) {
+func TestSTQuePushAndPop(t *testing.T) {
 	stq := NewSingleThreadQueue(10)
 	for i := 0; i < 100; i++ {
 		t.Run("stq:push", func(t *testing.T) {
@@ -45,7 +45,7 @@ func TestPushAndPop(t *testing.T) {
 	}
 }
 
-func TestPushAndAsyncPop(t *testing.T) {
+func TestSTQuePushAndAsyncPop(t *testing.T) {
 	stq := NewSingleThreadQueue(10)
 	for i := 0; i < 100; i++ {
 		t.Run("stq:push", func(t *testing.T) {

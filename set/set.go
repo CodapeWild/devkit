@@ -31,9 +31,9 @@ type OrderedSet interface {
 	Set
 }
 
-type QueueSet interface {
+type Queue interface {
+	Peek() any
 	Push(value any) error
 	Pop() (any, error)
 	AsyncPop(callback func(value any)) error
-	Peek() any
 }
