@@ -19,42 +19,40 @@ package io
 
 import (
 	"context"
-
-	"google.golang.org/protobuf/proto"
 )
 
 type PublishMessage interface {
-	Publish(ctx context.Context, message proto.Message) (*IOResponse, error)
+	Publish(ctx context.Context, message *IOMessage) (*IOResponse, error)
 }
 
 type PublishMessageBatch interface {
-	PublishBatch(ctx context.Context, batch []proto.Message) (*IOResponse, error)
+	PublishBatch(ctx context.Context, batch *IOMessageBatch) (*IOResponse, error)
 }
 
 type PublishMessageStream interface {
-	PublishStream(ctx context.Context, stream chan proto.Message) (*IOResponse, error)
+	PublishStream(ctx context.Context, stream chan *IOMessage) (*IOResponse, error)
 }
 
-type SubscribeMessageHandler func(ctx context.Context, message proto.Message) *IOResponse
+type SubscribeMessageHandler func(ctx context.Context, message *IOMessage) *IOResponse
 
-func (h SubscribeMessageHandler) BindContext(ctx context.Context, message proto.Message) SubscribeMessageHandler {
-	return func(_ context.Context, _ proto.Message) *IOResponse {
+func (h SubscribeMessageHandler) BindContext(ctx context.Context, message *IOMessage) SubscribeMessageHandler {
+	return func(_ context.Context, _ *IOMessage) *IOResponse {
 		return h(ctx, message)
 	}
 }
 
-type SubscribeMessageBatchHandler func(ctx context.Context, batch []proto.Message) *IOResponse
+type SubscribeMessageBatchHandler func(ctx context.Context, batch *IOMessageBatch) *IOResponse
 
-func (h SubscribeMessageBatchHandler) BindContext(ctx context.Context, batch []proto.Message) SubscribeMessageBatchHandler {
-	return func(_ context.Context, _ []proto.Message) *IOResponse {
+func (h SubscribeMessageBatchHandler) BindContext(ctx context.Context, batch *IOMessageBatch) SubscribeMessageBatchHandler {
+	return func(_ context.Context, _ *IOMessageBatch) *IOResponse {
 		return h(ctx, batch)
 	}
 }
 
-type SubscribeMessageStreamHandler func(ctx context.Context, stream chan proto.Message, out chan *IOResponse)
+type SubscribeMessageStreamHandler func(ctx context.Context, stream chan *IOMessage, out chan *IOResponse)
 
-func (h SubscribeMessageStreamHandler) BindContext(ctx context.Context, stream chan proto.Message, out chan *IOResponse) SubscribeMessageStreamHandler {
-	return func(_ context.Context, _ chan proto.Message, _ chan *IOResponse) {
+func (h SubscribeMessageStreamHandler) BindContext(ctx context.Context, stream chan *IOMessage, out chan *IOResponse) SubscribeMessageStreamHandler {
+	return func(_ context.Context, _ chan *IOMessage, _ chan *IOResponse) {
 		h(ctx, stream, out)
 	}
 }
@@ -72,11 +70,11 @@ type SubscribeMessageStream interface {
 }
 
 type FetchMessage interface {
-	Fetch(ctx context.Context) (proto.Message, *IOResponse, error)
+	Fetch(ctx context.Context) (*IOMessage, *IOResponse, error)
 }
 
 type FetchMessageBatch interface {
-	FetchBatch(ctx context.Context) ([]proto.Message, *IOResponse, error)
+	FetchBatch(ctx context.Context) (*IOMessageBatch, *IOResponse, error)
 }
 
 type PubAndSub interface {
@@ -104,4 +102,11 @@ type PubBatchAndSubBatch interface {
 type PubStreamAndSubStream interface {
 	PublishMessageStream
 	SubscribeMessageStream
+}
+
+type PubPubBatchAndFetchFetchBatch interface {
+	PublishMessage
+	PublishMessageBatch
+	FetchMessage
+	FetchMessageBatch
 }

@@ -24,7 +24,8 @@ var (
 )
 
 var (
-	IOSuccess     = NewIOResponse(IOStatus_IOSuccess)
+	IOSuccess     = NewIOResponse(IOStatus_IOSuccess, IORespWithMessage("io success"))
+	IOClosed      = NewIOResponse(IOStatus_IOClosed, IORespWithMessage("io closed"))
 	InputSuccess  = NewIOResponse(IOStatus_IOK, IORespWithMessage("input success"))
 	InputBusy     = NewIOResponse(IOStatus_IBusy, IORespWithMessage("input busy"))
 	InputTimeout  = NewIOResponse(IOStatus_ITimeout, IORespWithMessage("input timeout"))

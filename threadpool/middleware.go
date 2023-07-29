@@ -15,7 +15,7 @@
  *   limitations under the License.
  */
 
-package workerpool
+package threadpool
 
 import "net/http"
 

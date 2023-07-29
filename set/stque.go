@@ -79,18 +79,18 @@ func (stq *SingleThreadQueue) startThread() {
 			select {
 			case <-stq.closer:
 				for wrapper := range stq.opts {
-					stq.routine(wrapper)
+					stq.thread(wrapper)
 				}
 
 				return
 			case wrapper := <-stq.opts:
-				stq.routine(wrapper)
+				stq.thread(wrapper)
 			}
 		}
 	}()
 }
 
-func (stq *SingleThreadQueue) routine(wrapper *stqOptWrapper) {
+func (stq *SingleThreadQueue) thread(wrapper *stqOptWrapper) {
 	switch wrapper.opt {
 	case que_peek:
 		if len(stq.que) != 0 {

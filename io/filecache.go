@@ -18,26 +18,26 @@
 package io
 
 import (
+	"bytes"
 	"context"
 
 	"github.com/CodapeWild/devkit/directory"
 	"google.golang.org/protobuf/proto"
 )
 
-var _ PubPubBatchAndSubSubBatch = (*FileCache)(nil)
+var _ PubPubBatchAndFetchFetchBatch = (*FileCache)(nil)
 
 type FileCache struct {
-	seqDir        *directory.SequentialDirectory // cache data in sequential read/write directory
-	pageSize      int                            // kb
-	msgChan       chan proto.Message
-	buffer        []proto.Message
-	cur           int
-	handleMessage SubscribeMessageHandler
-	handleBatch   SubscribeMessageBatchHandler
-	closer        chan struct{}
+	seqDir                    *directory.SequentialDirectory // cache data in sequential read/write directory
+	readChan, writeChan       chan *IOMessage
+	pageSize                  int          // number of entries count
+	readPageBuf, writePageBuf []*IOMessage // buffer for reading and writing
+	readIndex                 int          // indicating the index position for reading start from 0 to pageSize
+	writeIndex                int          // indicating the index position for writing start from 0 to pageSize
+	closer                    chan struct{}
 }
 
-func (fc *FileCache) Publish(ctx context.Context, message proto.Message) (*IOResponse, error) {
+func (fc *FileCache) Publish(ctx context.Context, message *IOMessage) (*IOResponse, error) {
 	if err := ctx.Err(); err != nil {
 		return InputFailed, err
 	}
@@ -51,41 +51,64 @@ func (fc *FileCache) Publish(ctx context.Context, message proto.Message) (*IORes
 				return InputFailed, err
 			}
 		}
-	case fc.msgChan <- message:
+	case <-fc.closer:
+		return IOClosed, nil
+	case fc.writeChan <- message:
 	}
 
 	return InputSuccess, nil
 }
 
-func (fc *FileCache) PublishBatch(ctx context.Context, batch []proto.Message) (*IOResponse, error) {
+func (fc *FileCache) PublishBatch(ctx context.Context, batch *IOMessageBatch) (*IOResponse, error) {
 	if err := ctx.Err(); err != nil {
 		return InputFailed, err
 	}
 
-	for _, msg := range batch {
+	for _, msg := range batch.IOMessageBatch {
 		select {
 		case <-ctx.Done():
-		case fc.msgChan <- msg:
+			if err := ctx.Err(); err != nil {
+				if _, ok := ctx.Deadline(); ok {
+					return InputTimeout, nil
+				} else {
+					return InputFailed, err
+				}
+			}
+		case <-fc.closer:
+			return IOClosed, nil
+		case fc.writeChan <- msg:
 		}
 	}
 
 	return InputSuccess, nil
 }
 
-func (fc *FileCache) Subscribe(handler SubscribeMessageHandler) error {
-	fc.handleMessage = handler
+func (fc *FileCache) Fetch(ctx context.Context) (*IOMessage, *IOResponse, error) {
 
-	return nil
 }
 
-func (fc *FileCache) SubscribeBatch(handler SubscribeMessageBatchHandler) error {
-	fc.handleBatch = handler
+func (fc *FileCache) FetchBatch(ctx context.Context) (*IOMessageBatch, *IOResponse, error) {
 
-	return nil
 }
 
 func (fc *FileCache) Start() {
+	select {
+	case <-fc.closer:
+		return
+	default:
+	}
 
+	// start write thread
+	go func() {
+		for {
+			select {
+			case <-fc.closer:
+				return
+			case msg := <-fc.writeChan:
+				fc.writeRoutine(msg)
+			}
+		}
+	}()
 }
 
 func (fc *FileCache) Close() {
@@ -96,6 +119,25 @@ func (fc *FileCache) Close() {
 	}
 }
 
+func (fc *FileCache) writeRoutine(message *IOMessage) error {
+	fc.writePageBuf[fc.writeIndex] = message
+	fc.writeIndex++
+	if fc.writeIndex == fc.pageSize {
+		batch := &IOMessageBatch{IOMessageBatch: fc.writePageBuf}
+		if bts, err := proto.Marshal(batch); err != nil {
+			return err
+		} else {
+			if err = fc.seqDir.Save("", bytes.NewBuffer(bts)); err != nil {
+				return err
+			}
+		}
+		fc.writePageBuf = make([]*IOMessage, fc.pageSize)
+		fc.writeIndex = 0
+	}
+
+	return nil
+}
+
 func OpenFileCache(dir string, pageSize int) (*FileCache, error) {
 	seqDir, err := directory.OpenSequentialDirectory(dir)
 	if err != nil {
@@ -104,13 +146,17 @@ func OpenFileCache(dir string, pageSize int) (*FileCache, error) {
 
 	cache := pageSize / 2
 	if cache == 0 {
+		pageSize = 20
 		cache = 10
 	}
+
 	return &FileCache{
-		seqDir:   seqDir,
-		pageSize: pageSize,
-		msgChan:  make(chan proto.Message, cache),
-		buffer:   make([]proto.Message, pageSize),
-		closer:   make(chan struct{}),
+		seqDir:       seqDir,
+		readChan:     make(chan *IOMessage, cache),
+		writeChan:    make(chan *IOMessage, cache),
+		pageSize:     pageSize,
+		readPageBuf:  make([]*IOMessage, pageSize),
+		writePageBuf: make([]*IOMessage, pageSize),
+		closer:       make(chan struct{}),
 	}, nil
 }

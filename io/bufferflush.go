@@ -21,8 +21,6 @@ import (
 	"context"
 	"log"
 	"time"
-
-	"google.golang.org/protobuf/proto"
 )
 
 var _ PubAndSub = (*BufferFlush)(nil)
@@ -36,7 +34,7 @@ type BufferFlush struct {
 	closer       chan struct{}
 }
 
-func (bf *BufferFlush) Publish(ctx context.Context, message proto.Message) (*IOResponse, error) {
+func (bf *BufferFlush) Publish(ctx context.Context, message *IOMessage) (*IOResponse, error) {
 	if bf.handler == nil {
 		return InputFailed, ErrSubscribeHandlerUnset
 	}
@@ -52,6 +50,8 @@ func (bf *BufferFlush) Publish(ctx context.Context, message proto.Message) (*IOR
 				return InputFailed, err
 			}
 		}
+	case <-bf.closer:
+		return IOClosed, nil
 	case bf.msgChan <- bf.handler.BindContext(ctx, message):
 	}
 
@@ -125,6 +125,7 @@ func (bf *BufferFlush) doFlush() {
 func NewBufferFlush(maxSize int, d time.Duration) *BufferFlush {
 	cache := maxSize / 2
 	if cache == 0 {
+		maxSize = 20
 		cache = 10
 	}
 

@@ -19,7 +19,7 @@ package comerr
 
 import "errors"
 
-// Application level of runtime common errors
+// Runtime errors of application level
 var (
 	ErrAssertFailed      = errors.New("type assertion failed")
 	ErrEmptyValue        = errors.New("reference to an empty value")

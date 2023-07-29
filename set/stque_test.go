@@ -41,6 +41,6 @@ func TestSTQuePushAndPop(t *testing.T) {
 		})
 	}
 	if stq.Peek() != nil {
-		t.Fatal("single thread queue not work as expected")
+		t.Fatal("single thread queue not work as expeccted")
 	}
 }
