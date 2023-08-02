@@ -20,20 +20,22 @@ package io
 import "errors"
 
 var (
+	ErrIOClosed              = errors.New("IO closed")
 	ErrSubscribeHandlerUnset = errors.New("subscribe handler not set")
+	ErrWrongDataSetLength    = errors.New("wrong data set length")
 )
 
 var (
-	IOSuccess     = NewIOResponse(IOStatus_IOSuccess, IORespWithMessage("io success"))
-	IOClosed      = NewIOResponse(IOStatus_IOClosed, IORespWithMessage("io closed"))
-	InputSuccess  = NewIOResponse(IOStatus_IOK, IORespWithMessage("input success"))
-	InputBusy     = NewIOResponse(IOStatus_IBusy, IORespWithMessage("input busy"))
-	InputTimeout  = NewIOResponse(IOStatus_ITimeout, IORespWithMessage("input timeout"))
-	InputFailed   = NewIOResponse(IOStatus_IFailed, IORespWithMessage("input failed"))
-	OutputSuccess = NewIOResponse(IOStatus_OOK, IORespWithMessage("output success"))
-	OutputBusy    = NewIOResponse(IOStatus_OBusy, IORespWithMessage("output busy"))
-	OutputTimeout = NewIOResponse(IOStatus_OTimeout, IORespWithMessage("output timeout"))
-	OutputFailed  = NewIOResponse(IOStatus_OFailed, IORespWithMessage("output failed"))
+	IOSuccess       = NewIOResponse(IOStatus_IOSuccess, IORespWithMessage("io success"))
+	InputSuccess    = NewIOResponse(IOStatus_IOK, IORespWithMessage("input success"))
+	InputBusy       = NewIOResponse(IOStatus_IBusy, IORespWithMessage("input busy"))
+	InputTimeout    = NewIOResponse(IOStatus_ITimeout, IORespWithMessage("input timeout"))
+	InputFailed     = NewIOResponse(IOStatus_IFailed, IORespWithMessage("input failed"))
+	OutputSuccess   = NewIOResponse(IOStatus_OOK, IORespWithMessage("output success"))
+	OutputDataEmpty = NewIOResponse(IOStatus_OEMPTY, IORespWithMessage("output empty"))
+	OutputBusy      = NewIOResponse(IOStatus_OBusy, IORespWithMessage("output busy"))
+	OutputTimeout   = NewIOResponse(IOStatus_OTimeout, IORespWithMessage("output timeout"))
+	OutputFailed    = NewIOResponse(IOStatus_OFailed, IORespWithMessage("output failed"))
 )
 
 type IOResponseOption func(ioresp *IOResponse)

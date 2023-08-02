@@ -36,7 +36,7 @@ type BufferFlush struct {
 
 func (bf *BufferFlush) Publish(ctx context.Context, message *IOMessage) (*IOResponse, error) {
 	if bf.handler == nil {
-		return InputFailed, ErrSubscribeHandlerUnset
+		return nil, ErrSubscribeHandlerUnset
 	}
 	if err := ctx.Err(); err != nil {
 		return InputFailed, err
@@ -51,7 +51,7 @@ func (bf *BufferFlush) Publish(ctx context.Context, message *IOMessage) (*IOResp
 			}
 		}
 	case <-bf.closer:
-		return IOClosed, nil
+		return nil, ErrIOClosed
 	case bf.msgChan <- bf.handler.BindContext(ctx, message):
 	}
 
@@ -64,16 +64,17 @@ func (bf *BufferFlush) Subscribe(handler SubscribeMessageHandler) error {
 	return nil
 }
 
-func (bf *BufferFlush) Start() {
+func (bf *BufferFlush) Start(ctx context.Context) error {
 	if bf.handler == nil {
-		log.Println(ErrSubscribeHandlerUnset.Error())
-
-		return
+		return ErrSubscribeHandlerUnset
+	}
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 
 	select {
 	case <-bf.closer:
-		return
+		return ErrIOClosed
 	default:
 	}
 
@@ -81,6 +82,12 @@ func (bf *BufferFlush) Start() {
 		for {
 			select {
 			case <-bf.closer:
+				return
+			case <-ctx.Done():
+				if err := ctx.Err(); err != nil {
+					log.Println(err.Error())
+				}
+
 				return
 			case <-bf.flushTick.C:
 				if bf.cur > 0 {
@@ -95,6 +102,8 @@ func (bf *BufferFlush) Start() {
 			}
 		}
 	}()
+
+	return nil
 }
 
 func (bf *BufferFlush) Close() {

@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"strconv"
 	"testing"
@@ -64,6 +65,9 @@ func TestSeqDirDelete(t *testing.T) {
 		t.Run("remove:"+strconv.Itoa(i), func(t *testing.T) {
 			f, err := seqDir.Open("")
 			if err != nil {
+				if errors.Is(err, ErrDirEmpty) {
+					return
+				}
 				t.Fatal(err.Error())
 			}
 			defer f.Close()
@@ -78,5 +82,23 @@ func TestSeqDirDelete(t *testing.T) {
 				t.Fatal(err.Error())
 			}
 		})
+	}
+}
+
+func TestSeqDirOpenAndDelete(t *testing.T) {
+	seqDir, err := OpenSequentialDirectory("./test")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	for {
+		bts, err := seqDir.OpenAndDelete("")
+		if err != nil {
+			if errors.Is(err, ErrDirEmpty) {
+				break
+			}
+			t.Fatal(err.Error())
+		}
+		fmt.Println(base64.RawStdEncoding.EncodeToString(bts.Bytes()))
 	}
 }

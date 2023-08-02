@@ -17,15 +17,15 @@ message IOMessageBatch {
 
 enum IOStatus {
   IOSuccess = 0;
-  IOClosed = 1;
-  IOK = 2;
-  IBusy = 3;
-  ITimeout = 4;
-  IFailed = 5;
-  OOK = 6;
+  IOK = 1;
+  IBusy = 2;
+  ITimeout = 3;
+  IFailed = 4;
+  OOK = 5;
+  OEMPTY = 6;
   OBusy = 7;
-  OTimeout = 9;
-  OFailed = 10;
+  OTimeout = 8;
+  OFailed = 9;
 }
 
 message IOResponse {

@@ -18,6 +18,7 @@
 package directory
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -59,6 +60,24 @@ func (seqdir *SequentialDirectory) Open(_ string) (fs.File, error) {
 
 func (seqdir *SequentialDirectory) OpenWithID(index string) (fs.File, error) {
 	return os.Open(index)
+}
+
+func (seqdir *SequentialDirectory) OpenAndDelete(_ string) (*bytes.Buffer, error) {
+	f, err := seqdir.Open("")
+	if err != nil {
+		return nil, err
+	}
+	bts := bytes.NewBuffer(nil)
+	if _, err = io.Copy(bts, f); err != nil {
+		return nil, err
+	}
+	f.Close()
+
+	if err = seqdir.Delete(""); err != nil {
+		return nil, err
+	}
+
+	return bts, nil
 }
 
 func (seqd *SequentialDirectory) Save(_ string, r io.Reader) error {
