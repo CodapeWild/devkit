@@ -22,6 +22,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"os"
 	"sync"
 
 	"github.com/CodapeWild/devkit/directory"
@@ -32,12 +33,14 @@ var _ PubPubBatchAndFetchFetchBatch = (*FileCache)(nil)
 
 type FileCache struct {
 	sync.Mutex
+	path                      string
 	seqDir                    *directory.SequentialDirectory // cache data in sequential read/write directory
 	readChan, writeChan       chan *IOMessage
 	pageSize                  int          // number of entries count
+	readPageName              string       // the current file name where the data of readPageBuf from
 	readPageBuf, writePageBuf []*IOMessage // buffer for reading and writing
-	readIndex                 int          // indicating the index position for reading start from 0 to pageSize
-	writeIndex                int          // indicating the index position for writing start from 0 to pageSize
+	readIndex                 int          // indicating the index position for reading start from 0 to pageSize-1
+	writeIndex                int          // indicating the index position for writing start from 0 to pageSize-1
 	writePause, writeResume   chan struct{}
 	closer                    chan struct{}
 }
@@ -92,22 +95,27 @@ func (fc *FileCache) Fetch(ctx context.Context) (*IOMessage, *IOResponse, error)
 	if err := ctx.Err(); err != nil {
 		return nil, nil, err
 	}
+	select {
+	case <-fc.closer:
+		return nil, OutputFailed, ErrIOClosed
+	default:
+	}
 
 	fc.Lock()
 	defer fc.Unlock()
 
 	// load new page from SequentialDirectory(disk) if empty load data from writePageBuf into readPageBuf
-	if (fc.readIndex == fc.pageSize) || (fc.readPageBuf[fc.readIndex] == nil) {
-		bts, err := fc.seqDir.OpenAndDelete("")
+	if (fc.readIndex == fc.pageSize-1) || (fc.readPageBuf[fc.readIndex] == nil) {
+		fname, bts, err := fc.seqDir.OpenAndDelete("")
 		if err != nil {
-			// try to load data from writePageBuf
+			// directory is empty try to load data from writePageBuf
 			if errors.Is(err, directory.ErrDirEmpty) {
-				if len(fc.writePageBuf) != 0 {
+				if fc.writeIndex != 0 {
 					fc.writePause <- struct{}{}
 					fc.readPageBuf = fc.writePageBuf
-					fc.readIndex = 0
+					fc.readIndex = -1
 					fc.writePageBuf = make([]*IOMessage, fc.pageSize)
-					fc.writeIndex = 0
+					fc.writeIndex = -1
 					fc.writeResume <- struct{}{}
 				} else {
 					return nil, OutputDataEmpty, nil
@@ -123,57 +131,71 @@ func (fc *FileCache) Fetch(ctx context.Context) (*IOMessage, *IOResponse, error)
 			if len(batch.IOMessageBatch) != fc.pageSize {
 				return nil, OutputFailed, ErrWrongDataSetLength
 			}
+			fc.readPageName = fname
 			fc.readPageBuf = batch.IOMessageBatch
-			fc.readIndex = 0
+			fc.readIndex = -1
 		}
 	}
 
-	msg := fc.readPageBuf[fc.readIndex]
 	fc.readIndex++
 
-	return msg, OutputSuccess, nil
+	return fc.readPageBuf[fc.readIndex], OutputSuccess, nil
 }
 
+// FetchBatch returns messages batch the number of message count depends:
+// - readPageBuf not empty and SequentialDirectory not empty then return readIndex + pageSize
+// - readPageBuf empty and SequentialDirectory not empty then return pageSize
+// - readPageBuf not empty and SequentialDirectory empty and writePageBuf not empty then return readIndex + writeIndex
+// - readPageBuf empty and SequentialDirectory empty and writePageBuf not empty then return writeIndex
+// - readPageBuf empty and SequentialDirectory empty and writePageBuf empty return 0
+// the order of returning data is readPageBuf, SequentialDirectory, writePageBuf
 func (fc *FileCache) FetchBatch(ctx context.Context) (*IOMessageBatch, *IOResponse, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, nil, err
 	}
 
+	select {
+	case <-fc.closer:
+		return nil, OutputFailed, ErrIOClosed
+	default:
+	}
+
 	fc.Lock()
 	defer fc.Unlock()
 
-	// load nea page from SequentialDirectory(disk) if empty check readPageBuf if empty again check
-	// writPageBuf
-	bts, err := fc.seqDir.OpenAndDelete("")
+	var list []*IOMessage = fc.readPageBuf
+	_, bts, err := fc.seqDir.OpenAndDelete("")
 	if err != nil {
 		if errors.Is(err, directory.ErrDirEmpty) {
-			if len(fc.readPageBuf) != 0 {
-				batch := &IOMessageBatch{IOMessageBatch: fc.readPageBuf[:fc.readIndex]}
-				fc.readIndex = fc.pageSize
-
-				return batch, OutputSuccess, nil
-			} else if len(fc.writePageBuf) != 0 {
+			if fc.writeIndex != -1 {
 				fc.writePause <- struct{}{}
-				batch := &IOMessageBatch{IOMessageBatch: fc.writePageBuf[:fc.writeIndex]}
+				list = append(list, fc.writePageBuf[:fc.writeIndex+1]...)
 				fc.writePageBuf = make([]*IOMessage, fc.pageSize)
-				fc.writeIndex = 0
+				fc.writeIndex = -1
 				fc.writeResume <- struct{}{}
 
-				return batch, OutputSuccess, nil
+				fc.readPageBuf = make([]*IOMessage, fc.pageSize)
+				fc.readIndex = -1
+
+				return &IOMessageBatch{IOMessageBatch: list}, OutputSuccess, nil
 			} else {
 				return nil, OutputDataEmpty, nil
 			}
 		} else {
-			return nil, OutputFailed, nil
-		}
-	} else {
-		batch := &IOMessageBatch{}
-		if err = proto.Unmarshal(bts.Bytes(), batch); err != nil {
 			return nil, OutputFailed, err
-		} else {
-			return batch, OutputSuccess, nil
 		}
 	}
+
+	batch := &IOMessageBatch{}
+	if err = proto.Unmarshal(bts.Bytes(), batch); err != nil {
+		return nil, OutputFailed, err
+	}
+	list = append(list, batch.IOMessageBatch...)
+
+	fc.readPageBuf = make([]*IOMessage, fc.pageSize)
+	fc.readIndex = -1
+
+	return &IOMessageBatch{IOMessageBatch: list}, OutputSuccess, nil
 }
 
 func (fc *FileCache) Start(ctx context.Context) error {
@@ -188,16 +210,16 @@ func (fc *FileCache) Start(ctx context.Context) error {
 
 	// start write thread
 	go func() {
+	BEFORE_EXITS:
 		for {
 			select {
 			case <-fc.closer:
-				return
+				break BEFORE_EXITS
 			case <-ctx.Done():
 				if err := ctx.Err(); err != nil {
 					log.Println(err.Error())
 				}
-
-				return
+				break BEFORE_EXITS
 			case <-fc.writePause:
 				<-fc.writeResume
 			case msg := <-fc.writeChan:
@@ -205,6 +227,10 @@ func (fc *FileCache) Start(ctx context.Context) error {
 					log.Println(err.Error())
 				}
 			}
+		}
+
+		if err := fc.bufferToDisk(); err != nil {
+			log.Println(err.Error())
 		}
 	}()
 
@@ -220,12 +246,11 @@ func (fc *FileCache) Close() {
 }
 
 func (fc *FileCache) writeRoutine(message *IOMessage) error {
-	fc.writePageBuf[fc.writeIndex] = message
 	fc.writeIndex++
+	fc.writePageBuf[fc.writeIndex] = message
 	// move data into SequentialDirectory(disk)
-	if fc.writeIndex == fc.pageSize {
-		batch := &IOMessageBatch{IOMessageBatch: fc.writePageBuf}
-		if bts, err := proto.Marshal(batch); err != nil {
+	if fc.writeIndex == fc.pageSize-1 {
+		if bts, err := proto.Marshal(&IOMessageBatch{IOMessageBatch: fc.writePageBuf}); err != nil {
 			return err
 		} else {
 			if err = fc.seqDir.Save("", bytes.NewBuffer(bts)); err != nil {
@@ -233,7 +258,31 @@ func (fc *FileCache) writeRoutine(message *IOMessage) error {
 			}
 		}
 		fc.writePageBuf = make([]*IOMessage, fc.pageSize)
-		fc.writeIndex = 0
+		fc.writeIndex = -1
+	}
+
+	return nil
+}
+
+// bufferToDisk writes data in readPageBuf and writePageBuf back to directory(disk)
+func (fc *FileCache) bufferToDisk() error {
+	if fc.readIndex != -1 && fc.readPageName != "" {
+		bts, err := proto.Marshal(&IOMessageBatch{IOMessageBatch: fc.readPageBuf})
+		if err != nil {
+			return err
+		}
+		if err = os.WriteFile(fc.readPageName, bts, 0644); err != nil {
+			return err
+		}
+	}
+	if fc.writeIndex != -1 {
+		if bts, err := proto.Marshal(&IOMessageBatch{IOMessageBatch: fc.writePageBuf}); err != nil {
+			return err
+		} else {
+			if err = fc.seqDir.Save("", bytes.NewBuffer(bts)); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
@@ -252,12 +301,15 @@ func OpenFileCache(dir string, pageSize int) (*FileCache, error) {
 	}
 
 	return &FileCache{
+		path:         dir,
 		seqDir:       seqDir,
 		readChan:     make(chan *IOMessage, cache),
 		writeChan:    make(chan *IOMessage, cache),
 		pageSize:     pageSize,
 		readPageBuf:  make([]*IOMessage, pageSize),
 		writePageBuf: make([]*IOMessage, pageSize),
+		readIndex:    -1,
+		writeIndex:   -1,
 		closer:       make(chan struct{}),
 	}, nil
 }

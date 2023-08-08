@@ -39,6 +39,8 @@ func TestSeqDirSave(t *testing.T) {
 	)
 	for i := 0; i < saveTimes; i++ {
 		t.Run("save:"+strconv.Itoa(i), func(t *testing.T) {
+			t.Parallel()
+
 			buf := make([]byte, bufSize)
 			_, err := rand.Read(buf)
 			if err != nil {
@@ -63,6 +65,8 @@ func TestSeqDirDelete(t *testing.T) {
 	)
 	for i := 0; i < deleteTimes; i++ {
 		t.Run("remove:"+strconv.Itoa(i), func(t *testing.T) {
+			t.Parallel()
+
 			f, err := seqDir.Open("")
 			if err != nil {
 				if errors.Is(err, ErrDirEmpty) {
@@ -92,7 +96,7 @@ func TestSeqDirOpenAndDelete(t *testing.T) {
 	}
 
 	for {
-		bts, err := seqDir.OpenAndDelete("")
+		_, bts, err := seqDir.OpenAndDelete("")
 		if err != nil {
 			if errors.Is(err, ErrDirEmpty) {
 				break
