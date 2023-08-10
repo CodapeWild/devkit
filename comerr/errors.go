@@ -35,14 +35,10 @@ func ErrInvalidType(want, have interface{}) error {
 }
 
 func ErrUnrecognizedParameters(param ...any) error {
-	if len(param) == 0 {
-		return errors.New("unrecognized parameters")
-	} else {
-		s := fmt.Sprintf("%v", param[0])
-		for _, v := range param[1:] {
-			s = fmt.Sprintf("%s, %v", s, v)
-		}
-
-		return fmt.Errorf("unrecognized parameters: <%s>", s)
+	s := "unrecognized parameters"
+	for _, v := range param {
+		s = fmt.Sprintf("%s, %v", v)
 	}
+
+	return errors.New(s)
 }
