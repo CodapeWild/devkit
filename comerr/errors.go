@@ -21,8 +21,9 @@ import "errors"
 
 // Runtime errors of application level
 var (
-	ErrAssertFailed      = errors.New("type assertion failed")
-	ErrEmptyValue        = errors.New("reference to an empty value")
-	ErrInvalidParameters = errors.New("invalid parameters")
-	ErrOverflow          = errors.New("index overflow")
+	ErrAssertFailed        = errors.New("type assertion failed")
+	ErrEmptyValue          = errors.New("reference to an empty value")
+	ErrInvalidParameters   = errors.New("invalid parameters")
+	ErrOverflow            = errors.New("index overflow")
+	ErrUnrecognizedVersion = errors.New("unrecognized version")
 )
