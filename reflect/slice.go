@@ -27,11 +27,11 @@ func Swap(slice any, i, j int) error {
 	if i < 0 || j < 0 {
 		return comerr.ErrInvalidParameters
 	}
-	refslc := reflect.ValueOf(slice)
-	if k := refslc.Kind(); k != reflect.Slice || k != reflect.Array {
+	refs := reflect.ValueOf(slice)
+	if k := refs.Kind(); k != reflect.Slice || k != reflect.Array {
 		return comerr.ErrAssertFailed
 	}
-	if l := refslc.Len(); l < i || l < j {
+	if l := refs.Len(); l < i || l < j {
 		return comerr.ErrIndexOverflow
 	}
 

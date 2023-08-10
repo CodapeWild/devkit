@@ -17,23 +17,21 @@
 
 package http
 
-import (
-	"net/http"
+import "net/http"
 
-	"github.com/CodapeWild/devkit/set"
-)
-
-func CheckHeaders(next, failed http.HandlerFunc, target map[string][]string) http.HandlerFunc {
-	return func(resp http.ResponseWriter, req *http.Request) {
-		for k, v := range req.Header {
-			if ss, ok := target[k]; ok {
-				if !set.Include(v, ss) {
-					failed(resp, req)
-
-					return
-				}
+func MergeHeaders(h1, h2 http.Header) http.Header {
+	dst := make(http.Header)
+	for k, v := range h1 {
+		dst[k] = make([]string, len(v))
+		copy(dst[k], v)
+	}
+	for k, v := range h2 {
+		if _, ok := dst[k]; ok {
+			for _, u := range v {
+				dst[k] = append(dst[k], u)
 			}
 		}
-		next(resp, req)
 	}
+
+	return dst
 }

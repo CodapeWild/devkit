@@ -15,7 +15,7 @@
  *   limitations under the License.
  */
 
-package operator
+package set
 
 func Contains(src []string, target string) bool {
 	for i := range src {
