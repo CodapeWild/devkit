@@ -40,7 +40,7 @@ func ErrUnrecognizedParameters(param ...any) error {
 	} else {
 		s := fmt.Sprintf("%v", param[0])
 		for _, v := range param[1:] {
-			fmt.Sprintf(" %s, %v", s, v)
+			s = fmt.Sprintf("%s, %v", s, v)
 		}
 
 		return fmt.Errorf("unrecognized parameters: <%s>", s)
