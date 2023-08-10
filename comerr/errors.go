@@ -17,13 +17,19 @@
 
 package comerr
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 // Runtime errors of application level
 var (
-	ErrAssertFailed        = errors.New("type assertion failed")
-	ErrEmptyValue          = errors.New("reference to an empty value")
-	ErrInvalidParameters   = errors.New("invalid parameters")
-	ErrOverflow            = errors.New("index overflow")
-	ErrUnrecognizedVersion = errors.New("unrecognized version")
+	ErrAssertFailed      = errors.New("type assertion failed")
+	ErrEmptyValue        = errors.New("reference to an empty value")
+	ErrIndexOverflow     = errors.New("index overflow")
+	ErrInvalidParameters = errors.New("invalid parameters")
 )
+
+func ErrInvalidType(want, have interface{}) error {
+	return fmt.Errorf("invalid type: want: %T, have: %T", want, have)
+}

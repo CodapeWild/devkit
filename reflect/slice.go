@@ -32,7 +32,7 @@ func Swap(slice any, i, j int) error {
 		return comerr.ErrAssertFailed
 	}
 	if l := refslc.Len(); l < i || l < j {
-		return comerr.ErrOverflow
+		return comerr.ErrIndexOverflow
 	}
 
 	reflect.Swapper(slice)(i, j)
