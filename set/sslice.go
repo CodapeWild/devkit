@@ -88,3 +88,22 @@ func Range(src, target []string, min, max int) bool {
 
 	return c >= min
 }
+
+func Merge(s1, s2 []string) []string {
+	var dst = make([]string, len(s1))
+	copy(dst, s1)
+	for _, v := range s2 {
+		var found = false
+		for _, d := range dst {
+			if v == d {
+				found = true
+				break
+			}
+		}
+		if !found {
+			dst = append(dst, v)
+		}
+	}
+
+	return dst
+}

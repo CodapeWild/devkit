@@ -17,7 +17,11 @@
 
 package http
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/CodapeWild/devkit/set"
+)
 
 func MergeHeaders(h1, h2 http.Header) http.Header {
 	dst := make(http.Header)
@@ -26,10 +30,11 @@ func MergeHeaders(h1, h2 http.Header) http.Header {
 		copy(dst[k], v)
 	}
 	for k, v := range h2 {
-		if _, ok := dst[k]; ok {
-			for _, u := range v {
-				dst[k] = append(dst[k], u)
-			}
+		if _, ok := dst[k]; !ok {
+			dst[k] = make([]string, len(v))
+			copy(dst[k], v)
+		} else {
+			dst[k] = set.Merge(dst[k], v)
 		}
 	}
 
