@@ -18,11 +18,6 @@
 package io
 
 import (
-	"bytes"
-	"errors"
-	"io"
-
-	"github.com/CodapeWild/devkit/bufpool"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -52,12 +47,20 @@ func IOMessageWithPayload(payload []byte) IOMessageOption {
 	}
 }
 
-func (iomsg *IOMessage) With(opts ...IOMessageOption) *IOMessage {
+func (x *IOMessage) With(opts ...IOMessageOption) *IOMessage {
 	for _, opt := range opts {
-		opt(iomsg)
+		opt(x)
 	}
 
-	return iomsg
+	return x
+}
+
+func (x *IOMessage) Encode() (p []byte, err error) {
+	return proto.Marshal(x)
+}
+
+func (x *IOMessage) Decode(p []byte) (err error) {
+	return proto.Unmarshal(p, x)
 }
 
 func NewIOMessage(opts ...IOMessageOption) *IOMessage {
@@ -100,12 +103,12 @@ type IOMessageNative struct {
 	Payload interface{}
 }
 
-func (iomsgn *IOMessageNative) With(opts ...IOMessageNativeOption) *IOMessageNative {
+func (x *IOMessageNative) With(opts ...IOMessageNativeOption) *IOMessageNative {
 	for _, opt := range opts {
-		opt(iomsgn)
+		opt(x)
 	}
 
-	return iomsgn
+	return x
 }
 
 func NewIOMessageNative(opts ...IOMessageNativeOption) *IOMessageNative {
@@ -129,57 +132,65 @@ func (x *IOMessageBatch) AppendMessages(batch []*IOMessage) {
 	x.IOMessageBatch = buf
 }
 
-const delim byte = '\r'
-
-type IOMessageList []*IOMessage
-
-func (x IOMessageList) Encode(list IOMessageList) (bts []byte, err error) {
-	bufpool.MakeUseOfBuffer(func(buf *bytes.Buffer) {
-		for i := range x {
-			var p []byte
-			if p, err = proto.Marshal(x[i]); err != nil {
-				return
-			}
-			buf.Write(p)
-			buf.WriteByte(delim)
-		}
-		for i := range list {
-			var p []byte
-			if p, err = proto.Marshal(list[i]); err != nil {
-				return
-			}
-			buf.Write(p)
-			buf.WriteByte(delim)
-		}
-		bts = buf.Bytes()
-	})
-
-	return
+func (x *IOMessageBatch) Encode() (p []byte, err error) {
+	return proto.Marshal(x)
 }
 
-func (x IOMessageList) Decode(bts []byte) (list IOMessageList, err error) {
-	bufpool.MakeUseOfBuffer(func(buf *bytes.Buffer) {
-		if _, err = buf.Write(bts); err != nil {
-			return
-		}
-
-		for {
-			var line []byte
-			if line, err = buf.ReadBytes(delim); err != nil {
-				if errors.Is(err, io.EOF) {
-					err = nil
-				}
-
-				return
-			}
-
-			msg := &IOMessage{}
-			if err = proto.Unmarshal(line[:len(line)-1], msg); err != nil {
-				return
-			}
-			list = append(list, msg)
-		}
-	})
-
-	return
+func (x *IOMessageBatch) Decode(p []byte) (err error) {
+	return proto.Unmarshal(p, x)
 }
+
+// const delim byte = '\r'
+
+// type IOMessageList []*IOMessage
+
+// func (x IOMessageList) Encode(list IOMessageList) (bts []byte, err error) {
+// 	bufpool.MakeUseOfBuffer(func(buf *bytes.Buffer) {
+// 		for i := range x {
+// 			var p []byte
+// 			if p, err = proto.Marshal(x[i]); err != nil {
+// 				return
+// 			}
+// 			buf.Write(p)
+// 			buf.WriteByte(delim)
+// 		}
+// 		for i := range list {
+// 			var p []byte
+// 			if p, err = proto.Marshal(list[i]); err != nil {
+// 				return
+// 			}
+// 			buf.Write(p)
+// 			buf.WriteByte(delim)
+// 		}
+// 		bts = buf.Bytes()
+// 	})
+
+// 	return
+// }
+
+// func (x IOMessageList) Decode(bts []byte) (list IOMessageList, err error) {
+// 	bufpool.MakeUseOfBuffer(func(buf *bytes.Buffer) {
+// 		if _, err = buf.Write(bts); err != nil {
+// 			return
+// 		}
+
+// 		for {
+// 			var line []byte
+// 			if line, err = buf.ReadBytes(delim); err != nil {
+// 				if errors.Is(err, io.EOF) {
+// 					err = nil
+// 				}
+
+// 				return
+// 			}
+
+// 			msg := &IOMessage{}
+// 			if err = proto.Unmarshal(line[:len(line)-1], msg); err != nil {
+// 				return
+// 			}
+// 			list = append(list, msg)
+// 		}
+// 	})
+
+// 	return
+// }
