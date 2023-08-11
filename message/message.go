@@ -20,4 +20,5 @@ package message
 type Message interface {
 	Encode() (p []byte, err error)
 	Decode(p []byte) (err error)
+	Length() int
 }

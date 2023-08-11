@@ -19,40 +19,42 @@ package io
 
 import (
 	"context"
+
+	"github.com/CodapeWild/devkit/message"
 )
 
 type PublishMessage interface {
-	Publish(ctx context.Context, message *IOMessage) (*IOResponse, error)
+	Publish(ctx context.Context, msg message.Message) *IOResponse
 }
 
 type PublishMessageBatch interface {
-	PublishBatch(ctx context.Context, batch *IOMessageBatch) (*IOResponse, error)
+	PublishBatch(ctx context.Context, batch message.Message) *IOResponse
 }
 
 type PublishMessageStream interface {
-	PublishStream(ctx context.Context, stream chan *IOMessage) (*IOResponse, error)
+	PublishStream(ctx context.Context, stream chan message.Message) *IOResponse
 }
 
-type SubscribeMessageHandler func(ctx context.Context, message *IOMessage) *IOResponse
+type SubscribeMessageHandler func(ctx context.Context, msg message.Message) *IOResponse
 
-func (h SubscribeMessageHandler) BindContext(ctx context.Context, message *IOMessage) SubscribeMessageHandler {
-	return func(_ context.Context, _ *IOMessage) *IOResponse {
-		return h(ctx, message)
+func (h SubscribeMessageHandler) BindContext(ctx context.Context, msg message.Message) SubscribeMessageHandler {
+	return func(_ context.Context, _ message.Message) *IOResponse {
+		return h(ctx, msg)
 	}
 }
 
-type SubscribeMessageBatchHandler func(ctx context.Context, batch *IOMessageBatch) *IOResponse
+type SubscribeMessageBatchHandler func(ctx context.Context, batch message.Message) *IOResponse
 
-func (h SubscribeMessageBatchHandler) BindContext(ctx context.Context, batch *IOMessageBatch) SubscribeMessageBatchHandler {
-	return func(_ context.Context, _ *IOMessageBatch) *IOResponse {
+func (h SubscribeMessageBatchHandler) BindContext(ctx context.Context, batch message.Message) SubscribeMessageBatchHandler {
+	return func(_ context.Context, _ message.Message) *IOResponse {
 		return h(ctx, batch)
 	}
 }
 
-type SubscribeMessageStreamHandler func(ctx context.Context, stream chan *IOMessage, out chan *IOResponse)
+type SubscribeMessageStreamHandler func(ctx context.Context, stream chan message.Message, out chan *IOResponse)
 
-func (h SubscribeMessageStreamHandler) BindContext(ctx context.Context, stream chan *IOMessage, out chan *IOResponse) SubscribeMessageStreamHandler {
-	return func(_ context.Context, _ chan *IOMessage, _ chan *IOResponse) {
+func (h SubscribeMessageStreamHandler) BindContext(ctx context.Context, stream chan message.Message, out chan *IOResponse) SubscribeMessageStreamHandler {
+	return func(_ context.Context, _ chan message.Message, _ chan *IOResponse) {
 		h(ctx, stream, out)
 	}
 }
@@ -70,11 +72,11 @@ type SubscribeMessageStream interface {
 }
 
 type FetchMessage interface {
-	Fetch(ctx context.Context) (*IOMessage, *IOResponse, error)
+	Fetch(ctx context.Context) (message.Message, *IOResponse)
 }
 
 type FetchMessageBatch interface {
-	FetchBatch(ctx context.Context) (*IOMessageBatch, *IOResponse, error)
+	FetchBatch(ctx context.Context) (message.Message, *IOResponse)
 }
 
 type PubAndSub interface {

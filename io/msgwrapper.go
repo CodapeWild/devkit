@@ -63,6 +63,10 @@ func (x *IOMessage) Decode(p []byte) (err error) {
 	return proto.Unmarshal(p, x)
 }
 
+func (x *IOMessage) Length() int {
+	return 0
+}
+
 func NewIOMessage(opts ...IOMessageOption) *IOMessage {
 	msg := &IOMessage{}
 	for _, opt := range opts {
@@ -120,16 +124,16 @@ func NewIOMessageNative(opts ...IOMessageNativeOption) *IOMessageNative {
 	return msg
 }
 
-func (x *IOMessageBatch) SetMessages(batch []*IOMessage) {
-	x.IOMessageBatch = batch
+func (x *IOMessageBatch) SetMessages(list []*IOMessage) {
+	x.List = list
 }
 
-func (x *IOMessageBatch) AppendMessages(batch []*IOMessage) {
-	l := len(x.IOMessageBatch) + len(batch)
+func (x *IOMessageBatch) AppendMessages(list []*IOMessage) {
+	l := len(x.List) + len(list)
 	buf := make([]*IOMessage, l)
-	i := copy(buf, x.IOMessageBatch)
-	copy(buf[i:], batch)
-	x.IOMessageBatch = buf
+	i := copy(buf, x.List)
+	copy(buf[i:], list)
+	x.List = buf
 }
 
 func (x *IOMessageBatch) Encode() (p []byte, err error) {
@@ -138,6 +142,10 @@ func (x *IOMessageBatch) Encode() (p []byte, err error) {
 
 func (x *IOMessageBatch) Decode(p []byte) (err error) {
 	return proto.Unmarshal(p, x)
+}
+
+func (x *IOMessageBatch) Length() int {
+	return len(x.List)
 }
 
 // const delim byte = '\r'

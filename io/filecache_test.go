@@ -56,8 +56,8 @@ func TestFileCachePublish(t *testing.T) {
 			out := make(chan *IOMessage)
 			go mockIOMessage(10*time.Millisecond, 1000, 10, out)
 			for msg := range out {
-				if resp, err := fc.Publish(context.TODO(), msg); err != nil {
-					t.Fatal(err.Error())
+				if resp := fc.Publish(context.TODO(), msg); resp.IS(InputFailed) {
+					t.Fatal(resp.Message)
 				} else {
 					log.Printf("%#v", *resp)
 				}

@@ -21,6 +21,8 @@ import (
 	"context"
 	"log"
 	"time"
+
+	"github.com/CodapeWild/devkit/message"
 )
 
 var _ PubAndSub = (*BufferFlush)(nil)
@@ -34,28 +36,29 @@ type BufferFlush struct {
 	closer       chan struct{}
 }
 
-func (bf *BufferFlush) Publish(ctx context.Context, message *IOMessage) (*IOResponse, error) {
-	if bf.handler == nil {
-		return nil, ErrSubscribeHandlerUnset
-	}
+func (bf *BufferFlush) Publish(ctx context.Context, msg message.Message) *IOResponse {
 	if err := ctx.Err(); err != nil {
-		return InputFailed, err
+		return InputFailed.With(IORespWithMessage(err.Error()))
 	}
+	// if bf.handler == nil {
+	// 	return InputFailed.With(IORespWithMessage(ErrSubscribeHandlerUnset.Error()))
+	// }
+
 	select {
 	case <-ctx.Done():
 		if err := ctx.Err(); err != nil {
 			if _, ok := ctx.Deadline(); ok {
-				return InputTimeout, nil
+				return InputTimeout
 			} else {
-				return InputFailed, err
+				return InputFailed.With(IORespWithMessage(err.Error()))
 			}
 		}
 	case <-bf.closer:
-		return nil, ErrIOClosed
-	case bf.msgChan <- bf.handler.BindContext(ctx, message):
+		return IOClosed
+	case bf.msgChan <- bf.handler.BindContext(ctx, msg):
 	}
 
-	return InputSuccess, nil
+	return InputSuccess
 }
 
 func (bf *BufferFlush) Subscribe(handler SubscribeMessageHandler) error {
@@ -66,7 +69,7 @@ func (bf *BufferFlush) Subscribe(handler SubscribeMessageHandler) error {
 
 func (bf *BufferFlush) Start(ctx context.Context) error {
 	if bf.handler == nil {
-		return ErrSubscribeHandlerUnset
+		return ErrIOUncompleted
 	}
 	if err := ctx.Err(); err != nil {
 		return err
@@ -115,11 +118,6 @@ func (bf *BufferFlush) Close() {
 }
 
 func (bf *BufferFlush) doFlush() {
-	if bf.handler == nil {
-		log.Println(ErrSubscribeHandlerUnset.Error())
-
-		return
-	}
 	for _, handler := range bf.buffer {
 		resp := handler(nil, nil)
 		if resp != nil && resp != OutputSuccess {

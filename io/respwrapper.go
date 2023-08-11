@@ -20,58 +20,64 @@ package io
 import "errors"
 
 var (
-	ErrIOClosed              = errors.New("IO closed")
-	ErrSubscribeHandlerUnset = errors.New("subscribe handler not set")
-	ErrWrongDataSetLength    = errors.New("wrong data set length")
+	ErrIOClosed      = errors.New("io closed")
+	ErrIOUncompleted = errors.New("io init uncompleted")
 )
 
 var (
-	IOSuccess       = NewIOResponse(IOStatus_IOSuccess, IORespWithMessage("io success"))
-	InputSuccess    = NewIOResponse(IOStatus_IOK, IORespWithMessage("input success"))
-	InputBusy       = NewIOResponse(IOStatus_IBusy, IORespWithMessage("input busy"))
-	InputTimeout    = NewIOResponse(IOStatus_ITimeout, IORespWithMessage("input timeout"))
-	InputFailed     = NewIOResponse(IOStatus_IFailed, IORespWithMessage("input failed"))
-	OutputSuccess   = NewIOResponse(IOStatus_OOK, IORespWithMessage("output success"))
-	OutputDataEmpty = NewIOResponse(IOStatus_OEMPTY, IORespWithMessage("output empty"))
-	OutputBusy      = NewIOResponse(IOStatus_OBusy, IORespWithMessage("output busy"))
-	OutputTimeout   = NewIOResponse(IOStatus_OTimeout, IORespWithMessage("output timeout"))
-	OutputFailed    = NewIOResponse(IOStatus_OFailed, IORespWithMessage("output failed"))
+	IOSuccess      = NewIOResponse(IOStatus_IOSuccess, IORespWithMessage("io success"))
+	IOClosed       = NewIOResponse(IOStatus_IOClosed, IORespWithMessage("io closed"))
+	IOUncompleted  = NewIOResponse(IOStatus_IOUncompleted, IORespWithMessage("io init uncompleted"))
+	IOWrongMsgType = NewIOResponse(IOStatus_IOWrongMsgType, IORespWithMessage("message assertion failed"))
+	InputSuccess   = NewIOResponse(IOStatus_IOK, IORespWithMessage("input success"))
+	InputBusy      = NewIOResponse(IOStatus_IBusy, IORespWithMessage("input busy"))
+	InputTimeout   = NewIOResponse(IOStatus_ITimeout, IORespWithMessage("input timeout"))
+	InputFailed    = NewIOResponse(IOStatus_IFailed, IORespWithMessage("input failed"))
+	OutputSuccess  = NewIOResponse(IOStatus_OOK, IORespWithMessage("output success"))
+	OutputEmpty    = NewIOResponse(IOStatus_OEMPTY, IORespWithMessage("output empty"))
+	OutputBusy     = NewIOResponse(IOStatus_OBusy, IORespWithMessage("output busy"))
+	OutputTimeout  = NewIOResponse(IOStatus_OTimeout, IORespWithMessage("output timeout"))
+	OutputFailed   = NewIOResponse(IOStatus_OFailed, IORespWithMessage("output failed"))
 )
 
 type IOResponseOption func(ioresp *IOResponse)
 
 func IORespWithStatus(status IOStatus) IOResponseOption {
-	return func(ioresp *IOResponse) {
-		ioresp.Status = status
+	return func(resp *IOResponse) {
+		resp.Status = status
 	}
 }
 
-func IORespWithMessage(msg string) IOResponseOption {
-	return func(ioresp *IOResponse) {
-		ioresp.Message = msg
+func IORespWithMessage(s string) IOResponseOption {
+	return func(resp *IOResponse) {
+		resp.Message = s
 	}
 }
 
 func IORespWithPayload(coding string, payload []byte) IOResponseOption {
-	return func(ioresp *IOResponse) {
-		ioresp.Coding = coding
-		ioresp.Payload = payload
+	return func(resp *IOResponse) {
+		resp.Coding = coding
+		resp.Payload = payload
 	}
 }
 
-func (ioresp *IOResponse) With(opts ...IOResponseOption) *IOResponse {
+func (x *IOResponse) With(opts ...IOResponseOption) *IOResponse {
 	for _, opt := range opts {
-		opt(ioresp)
+		opt(x)
 	}
 
-	return ioresp
+	return x
+}
+
+func (x *IOResponse) IS(target *IOResponse) bool {
+	return x.Status == target.Status
 }
 
 func NewIOResponse(status IOStatus, opts ...IOResponseOption) *IOResponse {
-	ioresp := &IOResponse{Status: status}
+	resp := &IOResponse{Status: status}
 	for _, opt := range opts {
-		opt(ioresp)
+		opt(resp)
 	}
 
-	return ioresp
+	return resp
 }

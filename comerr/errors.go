@@ -25,9 +25,9 @@ import (
 // Runtime errors of application level
 var (
 	ErrAssertFailed      = errors.New("type assertion failed")
-	ErrEmptyValue        = errors.New("reference to an empty value")
 	ErrIndexOverflow     = errors.New("index overflow")
 	ErrInvalidParameters = errors.New("invalid parameters")
+	ErrNullPointer       = errors.New("reference to nil pointer")
 )
 
 func ErrInvalidType(want, have interface{}) error {

@@ -12,20 +12,23 @@ message IOMessage {
 }
 
 message IOMessageBatch {
-  repeated IOMessage IOMessageBatch = 1;
+  repeated IOMessage List = 1;
 }
 
 enum IOStatus {
   IOSuccess = 0;
-  IOK = 1;
-  IBusy = 2;
-  ITimeout = 3;
-  IFailed = 4;
-  OOK = 5;
-  OEMPTY = 6;
-  OBusy = 7;
-  OTimeout = 8;
-  OFailed = 9;
+  IOClosed = 1;
+  IOUncompleted = 2;
+  IOWrongMsgType = 3;
+  IOK = 4;
+  IBusy = 5;
+  ITimeout = 6;
+  IFailed = 7;
+  OOK = 8;
+  OEMPTY = 9;
+  OBusy = 10;
+  OTimeout = 11;
+  OFailed = 12;
 }
 
 message IOResponse {

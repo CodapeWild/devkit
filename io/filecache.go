@@ -26,6 +26,7 @@ import (
 	"sync"
 
 	"github.com/CodapeWild/devkit/directory"
+	"github.com/CodapeWild/devkit/message"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -45,59 +46,67 @@ type FileCache struct {
 	closer                    chan struct{}
 }
 
-func (fc *FileCache) Publish(ctx context.Context, message *IOMessage) (*IOResponse, error) {
+func (fc *FileCache) Publish(ctx context.Context, msg message.Message) *IOResponse {
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return InputFailed.With(IORespWithMessage(err.Error()))
+	}
+	iomsg, ok := msg.(*IOMessage)
+	if !ok {
+		return IOWrongMsgType
 	}
 
 	select {
 	case <-ctx.Done():
 		if err := ctx.Err(); err != nil {
 			if _, ok := ctx.Deadline(); ok {
-				return InputTimeout, nil
+				return InputTimeout
 			} else {
-				return InputFailed, err
+				return InputFailed.With(IORespWithMessage(err.Error()))
 			}
 		}
 	case <-fc.closer:
-		return nil, ErrIOClosed
-	case fc.writeChan <- message:
+		return IOClosed
+	case fc.writeChan <- iomsg:
 	}
 
-	return InputSuccess, nil
+	return InputSuccess
 }
 
-func (fc *FileCache) PublishBatch(ctx context.Context, batch *IOMessageBatch) (*IOResponse, error) {
+func (fc *FileCache) PublishBatch(ctx context.Context, batch message.Message) *IOResponse {
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return InputFailed.With(IORespWithMessage(err.Error()))
+	}
+	iomsgbatch, ok := batch.(*IOMessageBatch)
+	if !ok {
+		return IOWrongMsgType
 	}
 
-	for _, msg := range batch.IOMessageBatch {
+	for _, iomsg := range iomsgbatch.List {
 		select {
 		case <-ctx.Done():
 			if err := ctx.Err(); err != nil {
 				if _, ok := ctx.Deadline(); ok {
-					return InputTimeout, nil
+					return InputTimeout
 				} else {
-					return InputFailed, err
+					return InputFailed.With(IORespWithMessage(err.Error()))
 				}
 			}
 		case <-fc.closer:
-			return nil, ErrIOClosed
-		case fc.writeChan <- msg:
+			return IOClosed
+		case fc.writeChan <- iomsg:
 		}
 	}
 
-	return InputSuccess, nil
+	return InputSuccess
 }
 
-func (fc *FileCache) Fetch(ctx context.Context) (*IOMessage, *IOResponse, error) {
+func (fc *FileCache) Fetch(ctx context.Context) (message.Message, *IOResponse) {
 	if err := ctx.Err(); err != nil {
-		return nil, nil, err
+		return nil, InputFailed.With(IORespWithMessage(err.Error()))
 	}
 	select {
 	case <-fc.closer:
-		return nil, OutputFailed, ErrIOClosed
+		return nil, IOClosed
 	default:
 	}
 
@@ -118,28 +127,28 @@ func (fc *FileCache) Fetch(ctx context.Context) (*IOMessage, *IOResponse, error)
 					fc.writeIndex = -1
 					fc.writeResume <- struct{}{}
 				} else {
-					return nil, OutputDataEmpty, nil
+					return nil, OutputEmpty
 				}
 			} else {
-				return nil, OutputFailed, err
+				return nil, OutputFailed.With(IORespWithMessage(err.Error()))
 			}
 		} else {
-			batch := &IOMessageBatch{}
-			if err = proto.Unmarshal(bts.Bytes(), batch); err != nil {
-				return nil, OutputFailed, err
+			var batch = &IOMessageBatch{}
+			if err = batch.Decode(bts.Bytes()); err != nil {
+				return nil, OutputFailed.With(IORespWithMessage(err.Error()))
 			}
-			if len(batch.IOMessageBatch) != fc.pageSize {
-				return nil, OutputFailed, ErrWrongDataSetLength
+			if batch.Length() != fc.pageSize {
+				return nil, OutputFailed.With(IORespWithMessage("wrong message batch length"))
 			}
 			fc.readPageName = fname
-			fc.readPageBuf = batch.IOMessageBatch
+			fc.readPageBuf = batch.List
 			fc.readIndex = -1
 		}
 	}
 
 	fc.readIndex++
 
-	return fc.readPageBuf[fc.readIndex], OutputSuccess, nil
+	return fc.readPageBuf[fc.readIndex], OutputSuccess
 }
 
 // FetchBatch returns messages batch the number of message count depends:
@@ -149,14 +158,14 @@ func (fc *FileCache) Fetch(ctx context.Context) (*IOMessage, *IOResponse, error)
 // - readPageBuf empty and SequentialDirectory empty and writePageBuf not empty then return writeIndex
 // - readPageBuf empty and SequentialDirectory empty and writePageBuf empty return 0
 // the order of returning data is readPageBuf, SequentialDirectory, writePageBuf
-func (fc *FileCache) FetchBatch(ctx context.Context) (*IOMessageBatch, *IOResponse, error) {
+func (fc *FileCache) FetchBatch(ctx context.Context) (message.Message, *IOResponse) {
 	if err := ctx.Err(); err != nil {
-		return nil, nil, err
+		return nil, InputFailed.With(IORespWithMessage(err.Error()))
 	}
 
 	select {
 	case <-fc.closer:
-		return nil, OutputFailed, ErrIOClosed
+		return nil, IOClosed
 	default:
 	}
 
@@ -177,25 +186,25 @@ func (fc *FileCache) FetchBatch(ctx context.Context) (*IOMessageBatch, *IORespon
 				fc.readPageBuf = make([]*IOMessage, fc.pageSize)
 				fc.readIndex = -1
 
-				return &IOMessageBatch{IOMessageBatch: list}, OutputSuccess, nil
+				return &IOMessageBatch{List: list}, OutputSuccess
 			} else {
-				return nil, OutputDataEmpty, nil
+				return nil, OutputEmpty
 			}
 		} else {
-			return nil, OutputFailed, err
+			return nil, OutputFailed.With(IORespWithMessage(err.Error()))
 		}
 	}
 
 	batch := &IOMessageBatch{}
-	if err = proto.Unmarshal(bts.Bytes(), batch); err != nil {
-		return nil, OutputFailed, err
+	if err = batch.Decode(bts.Bytes()); err != nil {
+		return nil, OutputFailed.With(IORespWithMessage(err.Error()))
 	}
-	list = append(list, batch.IOMessageBatch...)
+	list = append(list, batch.List...)
 
 	fc.readPageBuf = make([]*IOMessage, fc.pageSize)
 	fc.readIndex = -1
 
-	return &IOMessageBatch{IOMessageBatch: list}, OutputSuccess, nil
+	return &IOMessageBatch{List: list}, OutputSuccess
 }
 
 func (fc *FileCache) Start(ctx context.Context) error {
@@ -250,7 +259,7 @@ func (fc *FileCache) writeRoutine(message *IOMessage) error {
 	fc.writePageBuf[fc.writeIndex] = message
 	// move data into SequentialDirectory(disk)
 	if fc.writeIndex == fc.pageSize-1 {
-		if bts, err := proto.Marshal(&IOMessageBatch{IOMessageBatch: fc.writePageBuf}); err != nil {
+		if bts, err := proto.Marshal(&IOMessageBatch{List: fc.writePageBuf}); err != nil {
 			return err
 		} else {
 			if err = fc.seqDir.Save("", bytes.NewBuffer(bts)); err != nil {
@@ -267,7 +276,7 @@ func (fc *FileCache) writeRoutine(message *IOMessage) error {
 // bufferToDisk writes data in readPageBuf and writePageBuf back to directory(disk)
 func (fc *FileCache) bufferToDisk() error {
 	if fc.readIndex != -1 && fc.readPageName != "" {
-		bts, err := proto.Marshal(&IOMessageBatch{IOMessageBatch: fc.readPageBuf})
+		bts, err := proto.Marshal(&IOMessageBatch{List: fc.readPageBuf})
 		if err != nil {
 			return err
 		}
@@ -276,7 +285,7 @@ func (fc *FileCache) bufferToDisk() error {
 		}
 	}
 	if fc.writeIndex != -1 {
-		if bts, err := proto.Marshal(&IOMessageBatch{IOMessageBatch: fc.writePageBuf}); err != nil {
+		if bts, err := proto.Marshal(&IOMessageBatch{List: fc.writePageBuf}); err != nil {
 			return err
 		} else {
 			if err = fc.seqDir.Save("", bytes.NewBuffer(bts)); err != nil {
