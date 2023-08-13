@@ -28,7 +28,7 @@ type PublishMessage interface {
 }
 
 type PublishMessageBatch interface {
-	PublishBatch(ctx context.Context, batch message.Message) *IOResponse
+	PublishBatch(ctx context.Context, batch message.MessageList) *IOResponse
 }
 
 type PublishMessageStream interface {
@@ -43,10 +43,10 @@ func (h SubscribeMessageHandler) BindContext(ctx context.Context, msg message.Me
 	}
 }
 
-type SubscribeMessageBatchHandler func(ctx context.Context, batch message.Message) *IOResponse
+type SubscribeMessageBatchHandler func(ctx context.Context, batch message.MessageList) *IOResponse
 
-func (h SubscribeMessageBatchHandler) BindContext(ctx context.Context, batch message.Message) SubscribeMessageBatchHandler {
-	return func(_ context.Context, _ message.Message) *IOResponse {
+func (h SubscribeMessageBatchHandler) BindContext(ctx context.Context, batch message.MessageList) SubscribeMessageBatchHandler {
+	return func(_ context.Context, _ message.MessageList) *IOResponse {
 		return h(ctx, batch)
 	}
 }
@@ -76,7 +76,7 @@ type FetchMessage interface {
 }
 
 type FetchMessageBatch interface {
-	FetchBatch(ctx context.Context) (message.Message, *IOResponse)
+	FetchBatch(ctx context.Context) (message.MessageList, *IOResponse)
 }
 
 type PubAndSub interface {

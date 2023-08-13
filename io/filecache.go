@@ -72,7 +72,7 @@ func (fc *FileCache) Publish(ctx context.Context, msg message.Message) *IORespon
 	return InputSuccess
 }
 
-func (fc *FileCache) PublishBatch(ctx context.Context, batch message.Message) *IOResponse {
+func (fc *FileCache) PublishBatch(ctx context.Context, batch message.MessageList) *IOResponse {
 	if err := ctx.Err(); err != nil {
 		return InputFailed.With(IORespWithMessage(err.Error()))
 	}
@@ -158,7 +158,7 @@ func (fc *FileCache) Fetch(ctx context.Context) (message.Message, *IOResponse) {
 // - readPageBuf empty and SequentialDirectory empty and writePageBuf not empty then return writeIndex
 // - readPageBuf empty and SequentialDirectory empty and writePageBuf empty return 0
 // the order of returning data is readPageBuf, SequentialDirectory, writePageBuf
-func (fc *FileCache) FetchBatch(ctx context.Context) (message.Message, *IOResponse) {
+func (fc *FileCache) FetchBatch(ctx context.Context) (message.MessageList, *IOResponse) {
 	if err := ctx.Err(); err != nil {
 		return nil, InputFailed.With(IORespWithMessage(err.Error()))
 	}

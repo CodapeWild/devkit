@@ -40,9 +40,6 @@ func (bf *BufferFlush) Publish(ctx context.Context, msg message.Message) *IOResp
 	if err := ctx.Err(); err != nil {
 		return InputFailed.With(IORespWithMessage(err.Error()))
 	}
-	// if bf.handler == nil {
-	// 	return InputFailed.With(IORespWithMessage(ErrSubscribeHandlerUnset.Error()))
-	// }
 
 	select {
 	case <-ctx.Done():

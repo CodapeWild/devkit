@@ -18,6 +18,7 @@
 package io
 
 import (
+	"github.com/CodapeWild/devkit/message"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -61,10 +62,6 @@ func (x *IOMessage) Encode() (p []byte, err error) {
 
 func (x *IOMessage) Decode(p []byte) (err error) {
 	return proto.Unmarshal(p, x)
-}
-
-func (x *IOMessage) Length() int {
-	return 0
 }
 
 func NewIOMessage(opts ...IOMessageOption) *IOMessage {
@@ -146,6 +143,14 @@ func (x *IOMessageBatch) Decode(p []byte) (err error) {
 
 func (x *IOMessageBatch) Length() int {
 	return len(x.List)
+}
+
+func (x *IOMessageBatch) Foreach(handler func(k int, msg message.Message) bool) {
+	for k, v := range x.List {
+		if !handler(k, v) {
+			break
+		}
+	}
 }
 
 // const delim byte = '\r'

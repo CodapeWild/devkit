@@ -20,5 +20,18 @@ package message
 type Message interface {
 	Encode() (p []byte, err error)
 	Decode(p []byte) (err error)
+}
+
+type MessageList interface {
+	Message
 	Length() int
+	Foreach(handler func(k int, msg Message) bool)
+}
+
+type MessageSet interface {
+	Message
+	Length() int
+	Foreach(handler func(k any, msg Message) bool)
+	Get(k any) (msg Message, ok bool)
+	Set(k any, msg Message)
 }
