@@ -125,14 +125,15 @@ func OpenSequentialDirectory(path string) (*SequentialDirectory, error) {
 	if err != nil {
 		return nil, err
 	}
-	seqdir.idflk = id.NewIDFlaker()
-	seqdir.stque = set.NewSingleThreadQueue(10)
-
 	ids, err := dirEntriesToIDs(entries)
 	if err != nil {
 		return nil, err
 	}
 	sort.Sort(ids)
+
+	seqdir.idflk = id.NewIDFlaker()
+
+	seqdir.stque = set.NewSingleThreadQueue(10)
 	for _, id := range ids {
 		if err = seqdir.stque.Push(id); err != nil {
 			log.Println(err.Error())

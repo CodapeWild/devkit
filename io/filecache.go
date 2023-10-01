@@ -297,8 +297,8 @@ func (fc *FileCache) bufferToDisk() error {
 	return nil
 }
 
-func OpenFileCache(dir string, pageSize int) (*FileCache, error) {
-	seqDir, err := directory.OpenSequentialDirectory(dir)
+func OpenFileCache(path string, pageSize int) (*FileCache, error) {
+	seqDir, err := directory.OpenSequentialDirectory(path)
 	if err != nil {
 		return nil, err
 	}
@@ -310,7 +310,7 @@ func OpenFileCache(dir string, pageSize int) (*FileCache, error) {
 	}
 
 	return &FileCache{
-		path:         dir,
+		path:         path,
 		seqDir:       seqDir,
 		readChan:     make(chan *IOMessage, cache),
 		writeChan:    make(chan *IOMessage, cache),

@@ -1,6 +1,6 @@
 module github.com/CodapeWild/devkit
 
-go 1.18
+go 1.19
 
 require (
 	google.golang.org/grpc v1.56.2

@@ -106,6 +106,11 @@ type PubStreamAndSubStream interface {
 	SubscribeMessageStream
 }
 
+type PubBatchAndFetchBatch interface {
+	PublishMessageBatch
+	FetchMessageBatch
+}
+
 type PubPubBatchAndFetchFetchBatch interface {
 	PublishMessage
 	PublishMessageBatch
