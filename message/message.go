@@ -1,37 +1,67 @@
 /*
- *   Copyright (c) 2023 CodapeWild
- *   All rights reserved.
+*   Copyright (c) 2023 CodapeWild
+*   All rights reserved.
 
- *   Licensed under the Apache License, Version 2.0 (the "License");
- *   you may not use this file except in compliance with the License.
- *   You may obtain a copy of the License at
+*   Licensed under the Apache License, Version 2.0 (the "License");
+*   you may not use this file except in compliance with the License.
+*   You may obtain a copy of the License at
 
- *   http://www.apache.org/licenses/LICENSE-2.0
+*   http://www.apache.org/licenses/LICENSE-2.0
 
- *   Unless required by applicable law or agreed to in writing, software
- *   distributed under the License is distributed on an "AS IS" BASIS,
- *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *   See the License for the specific language governing permissions and
- *   limitations under the License.
+*   Unless required by applicable law or agreed to in writing, software
+*   distributed under the License is distributed on an "AS IS" BASIS,
+*   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+*   See the License for the specific language governing permissions and
+*   limitations under the License.
  */
 
 package message
 
-type Message interface {
-	Encode() (p []byte, err error)
-	Decode(p []byte) (err error)
+import (
+	"bytes"
+	"compress/flate"
+	"io"
+	reflect "reflect"
+
+	"github.com/CodapeWild/devkit/bufpool"
+	"google.golang.org/protobuf/proto"
+)
+
+type Msg interface {
+	Marshal(any) ([]byte, error)
+	Unmarshal([]byte, any) error
 }
 
-type MessageList interface {
-	Message
-	Length() int
-	Foreach(handler func(k int, msg Message) bool)
+func (x *Message) Marshal(_ any) ([]byte, error) {
+	return proto.Marshal(x)
 }
 
-type MessageSet interface {
-	Message
-	Length() int
-	Foreach(handler func(k any, msg Message) bool)
-	Get(k any) (msg Message, ok bool)
-	Set(k any, msg Message)
+func (x *Message) Unmarshal(_ []byte, _ any) error {
+	return proto.Unmarshal(x.Content, x)
+}
+
+func Pack(p []byte, method Compression) (*Message, error) {
+	var (
+		compressedBuf []byte
+		err           error
+	)
+	bufpool.MakeUseOfBuffer(func(buf *bytes.Buffer) {
+		if err = method.Compress(buf, p, flate.DefaultCompression); err == nil {
+			compressedBuf, err = io.ReadAll(buf)
+		}
+	})
+
+	if err != nil {
+		return nil, err
+	} else {
+		return &Message{
+			Compression: uint32(reflect.ValueOf(method).Uint()),
+			Length:      uint32(len(p)),
+			Content:     compressedBuf,
+		}, nil
+	}
+}
+
+func Unpack(msg *Message) ([]byte, error) {
+
 }

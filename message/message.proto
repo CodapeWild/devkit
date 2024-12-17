@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package io;
+
+option go_package = "github.com/CodapeWild/devkit/message";
+
+message Message {
+  uint32 Compression = 1;
+  uint32 Length = 3;
+  bytes Content = 4;
+}

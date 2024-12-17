@@ -1,5 +1,5 @@
 /*
- *   Copyright (c) 2023 CodapeWild
+ *   Copyright (c) 2024 CodapeWild
  *   All rights reserved.
 
  *   Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,27 +15,4 @@
  *   limitations under the License.
  */
 
-package bufpool
-
-import (
-	"bytes"
-	"sync"
-)
-
-var bp = sync.Pool{New: func() interface{} { return new(bytes.Buffer) }}
-
-func GetBuffer() *bytes.Buffer {
-	return bp.Get().(*bytes.Buffer)
-}
-
-func PutBuffer(buf *bytes.Buffer) {
-	buf.Reset()
-	bp.Put(buf)
-}
-
-func MakeUseOfBuffer(f func(buf *bytes.Buffer)) {
-	buf := GetBuffer()
-	defer PutBuffer(buf)
-
-	f(buf)
-}
+package message

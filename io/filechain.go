@@ -38,13 +38,13 @@ type FileChain struct {
 }
 
 func (fc *FileChain) PublishBatch(ctx context.Context, batch message.MessageList) *IOResponse {
-
+	return nil
 }
 
 func (fc *FileChain) FetchBatch(ctx context.Context) (message.MessageList, *IOResponse) {
-
+	return nil, nil
 }
 
 func OpenFileChain(path string, pageSize int) (*FileChain, error) {
-
+	return nil, nil
 }
